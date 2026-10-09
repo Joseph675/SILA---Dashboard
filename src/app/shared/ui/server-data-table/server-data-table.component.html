@@ -1,0 +1,116 @@
+<div class="sila-card overflow-hidden">
+  @if (error(); as mensaje) {
+    <div class="flex flex-col items-center gap-3 px-4 py-12 text-center" role="alert">
+      <app-icon name="lucideCircleAlert" class="size-8 text-destructive" aria-hidden="true" />
+      <p class="font-medium">No se pudo cargar la información</p>
+      <p class="max-w-md text-sm text-muted-foreground">{{ mensaje }}</p>
+      <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="reintentar.emit()">
+        <app-icon name="lucideRefreshCw" class="size-3.5" aria-hidden="true" />
+        Reintentar
+      </button>
+    </div>
+  } @else if (!primeraCarga() && total() === 0) {
+    <div class="flex flex-col items-center gap-3 px-4 py-12 text-center">
+      <app-icon name="lucideSearchX" class="size-8 text-muted-foreground" aria-hidden="true" />
+      <p class="font-medium">{{ vacioTitulo() }}</p>
+      @if (vacioAyuda()) {
+        <p class="max-w-md text-sm text-muted-foreground">{{ vacioAyuda() }}</p>
+      }
+      <ng-content select="[accionVacio]" />
+    </div>
+  } @else {
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm" [attr.aria-busy]="cargando()">
+        <caption class="sr-only">{{ titulo() }}</caption>
+        <thead>
+          <tr class="border-b border-border bg-muted/30">
+            @for (column of columns(); track column.key) {
+              <th
+                scope="col"
+                class="px-4 py-3 text-xs font-medium text-muted-foreground"
+                [class.text-start]="column.align !== 'end'"
+                [class.text-end]="column.align === 'end'"
+                [attr.aria-sort]="ariaSort(column)"
+              >
+                @if (column.sortable === false) {
+                  {{ column.label }}
+                } @else {
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                    (click)="ordenar(column)"
+                  >
+                    {{ column.label }}
+                    <app-icon [name]="iconoOrden(column)" class="size-3.5" aria-hidden="true" />
+                  </button>
+                }
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody [class.opacity-60]="cargando()">
+          @if (primeraCarga()) {
+            @for (fila of filasSkeleton; track fila) {
+              <tr class="border-b border-border/50">
+                @for (column of columns(); track column.key) {
+                  <td class="px-4 py-3"><div class="h-4 w-full max-w-32 animate-pulse rounded bg-muted"></div></td>
+                }
+              </tr>
+            }
+          } @else {
+            @for (row of filas(); track rowId()(row); let index = $index) {
+              <tr class="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                @for (column of columns(); track column.key) {
+                  <td class="px-4 py-3" [class.text-start]="column.align !== 'end'" [class.text-end]="column.align === 'end'">
+                    @if (templateFor(column); as cellTemplate) {
+                      <ng-container *ngTemplateOutlet="cellTemplate; context: { $implicit: row, index: index }" />
+                    } @else {
+                      {{ column.value(row) }}
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex flex-col items-center justify-between gap-3 border-t border-border px-4 py-3 sm:flex-row">
+      <p class="text-sm text-muted-foreground" aria-live="polite">
+        @if (primeraCarga()) {
+          Cargando…
+        } @else {
+          Mostrando {{ desde() }}–{{ hasta() }} de {{ total() }}
+        }
+      </p>
+      <div class="flex flex-wrap items-center justify-center gap-3">
+        <label class="flex items-center gap-2 text-sm text-muted-foreground">
+          Filas
+          <select class="sila-select h-8 w-[70px]" [value]="tamano()" (change)="cambiarTamano($any($event.target).value)">
+            @for (opcion of tamanos; track opcion) {
+              <option [value]="opcion">{{ opcion }}</option>
+            }
+          </select>
+        </label>
+        <button
+          type="button"
+          class="sila-btn sila-btn-outline sila-btn-sm"
+          [disabled]="indice() === 0 || cargando()"
+          (click)="pageChange.emit(indice() - 1)"
+        >
+          Anterior
+        </button>
+        <span class="text-sm text-muted-foreground">{{ indice() + 1 }} / {{ ultimaPagina() + 1 }}</span>
+        <button
+          type="button"
+          class="sila-btn sila-btn-outline sila-btn-sm"
+          [disabled]="indice() >= ultimaPagina() || cargando()"
+          (click)="pageChange.emit(indice() + 1)"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  }
+</div>

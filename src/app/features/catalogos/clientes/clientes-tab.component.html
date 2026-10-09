@@ -1,0 +1,106 @@
+<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <div class="flex flex-1 flex-wrap items-end gap-3">
+    <div class="w-full sm:w-72">
+      <label for="clientes-buscar" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar</label>
+      <div class="relative">
+        <app-icon name="lucideSearch" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <input
+          id="clientes-buscar"
+          type="search"
+          class="sila-input ps-9"
+          placeholder="Nombre o documento"
+          maxlength="120"
+          [value]="texto()"
+          (input)="texto.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+    <div>
+      <label for="clientes-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
+      <select id="clientes-estado" class="sila-select w-36" [value]="filtroActivo()" (change)="cambiarFiltro($any($event.target).value)">
+        <option value="TODOS">Todos</option>
+        <option value="ACTIVOS">Activos</option>
+        <option value="INACTIVOS">Inactivos</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="sila-btn sila-btn-primary" (click)="editando.set(null)">
+    <app-icon name="lucideUserPlus" class="size-4" aria-hidden="true" />
+    Nuevo cliente
+  </button>
+</div>
+
+<app-server-data-table
+  titulo="Clientes"
+  [columns]="columnas"
+  [page]="listado.datos()"
+  [rowId]="clienteId"
+  [cargando]="listado.cargando()"
+  [error]="listado.error()"
+  [sort]="listado.sort()"
+  vacioTitulo="No hay clientes que coincidan"
+  vacioAyuda="Cambia la búsqueda o el filtro de estado, o registra un cliente nuevo."
+  (pageChange)="listado.irAPagina($event)"
+  (sizeChange)="listado.cambiarTamano($event)"
+  (sortChange)="listado.sort.set($event)"
+  (reintentar)="listado.recargar()"
+>
+  <button accionVacio type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="editando.set(null)">Nuevo cliente</button>
+
+  <ng-template appDataTableCell="numero_documento" [cellRows]="listado.datos()?.items" let-cliente>
+    <span class="whitespace-nowrap font-mono text-xs">{{ cliente.tipo_documento }} {{ cliente.numero_documento }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-cliente>
+    <span class="font-medium">{{ cliente.nombre }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="email" [cellRows]="listado.datos()?.items" let-cliente>
+    <span class="text-muted-foreground">{{ cliente.email }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="direccion" [cellRows]="listado.datos()?.items" let-cliente>
+    <span class="block max-w-56 truncate" [attr.title]="cliente.direccion">{{ cliente.direccion || '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="limite_credito" [cellRows]="listado.datos()?.items" let-cliente>
+    {{ cop(cliente.limite_credito) }}
+  </ng-template>
+  <ng-template appDataTableCell="saldo_deudor" [cellRows]="listado.datos()?.items" let-cliente>
+    <span [class.font-semibold]="cliente.saldo_deudor > 0">{{ cop(cliente.saldo_deudor) }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="activo" [cellRows]="listado.datos()?.items" let-cliente>
+    <app-status-chip [texto]="cliente.activo ? 'Activo' : 'Inactivo'" [tono]="cliente.activo ? 'exito' : 'neutro'" />
+  </ng-template>
+  <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-cliente>
+    <div class="flex justify-end gap-1">
+      <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="editando.set(cliente)">
+        <app-icon name="lucidePencil" class="size-3.5" aria-hidden="true" />
+        Editar<span class="sr-only"> {{ cliente.nombre }}</span>
+      </button>
+      <!-- Hiding is not security: the procedure rejects OPERATIVO with 20008 anyway. -->
+      <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="cambiandoEstado.set(cliente)">
+        <app-icon name="lucidePower" class="size-3.5" aria-hidden="true" />
+        {{ cliente.activo ? 'Desactivar' : 'Activar' }}<span class="sr-only"> {{ cliente.nombre }}</span>
+      </button>
+    </div>
+  </ng-template>
+</app-server-data-table>
+
+<app-cliente-form-dialog
+  [abierto]="editando() !== undefined"
+  [cliente]="editando() ?? null"
+  (guardado)="alGuardar($event)"
+  (cerrar)="editando.set(undefined)"
+/>
+
+<app-confirm-dialog
+  [open]="cambiandoEstado() !== null"
+  [titulo]="cambiandoEstado()?.activo ? 'Desactivar cliente' : 'Activar cliente'"
+  [mensaje]="
+    cambiandoEstado()?.activo
+      ? '¿Desactivar a ' + cambiandoEstado()?.nombre + '?'
+      : '¿Activar a ' + cambiandoEstado()?.nombre + '?'
+  "
+  [textoConfirmar]="cambiandoEstado()?.activo ? 'Desactivar' : 'Activar'"
+  [peligro]="cambiandoEstado()?.activo ?? false"
+  [ocupado]="procesandoEstado()"
+  (confirmar)="confirmarEstado()"
+  (cancelar)="cambiandoEstado.set(null)"
+/>

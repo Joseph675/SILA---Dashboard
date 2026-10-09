@@ -1,0 +1,67 @@
+<div class="mb-2 flex flex-wrap items-end gap-3">
+  <div class="w-full sm:w-56">
+    <label for="accesos-usuario" class="mb-1 block text-xs font-medium text-muted-foreground">Usuario</label>
+    <input id="accesos-usuario" type="search" class="sila-input" placeholder="Contiene…" maxlength="100" [value]="usuario.crudo()" (input)="usuario.crudo.set($any($event.target).value)" />
+  </div>
+  <div>
+    <label for="accesos-evento" class="mb-1 block text-xs font-medium text-muted-foreground">Evento</label>
+    <select id="accesos-evento" class="sila-select w-60" [value]="evento()" (change)="evento.set($any($event.target).value)">
+      <option value="">Todos</option>
+      @for (e of eventos; track e.codigo) {
+        <option [value]="e.codigo" [selected]="e.codigo === evento()">{{ e.etiqueta }}</option>
+      }
+    </select>
+  </div>
+  <div>
+    <label for="accesos-ip" class="mb-1 block text-xs font-medium text-muted-foreground">IP (exacta)</label>
+    <input id="accesos-ip" type="search" class="sila-input w-40 font-mono" maxlength="45" [value]="ip.crudo()" (input)="ip.crudo.set($any($event.target).value)" />
+  </div>
+  <app-filtro-fechas idBase="accesos" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
+</div>
+<p class="mb-3 text-xs text-muted-foreground">Las fechas del filtro son días en UTC; las horas de la tabla están en hora de Colombia (UTC−5).</p>
+
+<div class="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Atajos">
+  <span class="text-xs font-medium text-muted-foreground">Atajos:</span>
+  <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="fallosDeHoy('LOGIN_FALLIDO')">Fallos de clave de hoy</button>
+  <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="fallosDeHoy('MFA_FALLIDO')">Fallos del segundo factor de hoy</button>
+  <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="bloqueos()">Bloqueos</button>
+  <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
+</div>
+
+<app-server-data-table
+  titulo="Accesos"
+  [columns]="columnas"
+  [page]="listado.datos()"
+  [rowId]="accesoId"
+  [cargando]="listado.cargando()"
+  [error]="listado.error()"
+  [sort]="listado.sort()"
+  vacioTitulo="No hay accesos que coincidan"
+  vacioAyuda="Cambia los filtros o el rango de fechas."
+  (pageChange)="listado.irAPagina($event)"
+  (sizeChange)="listado.cambiarTamano($event)"
+  (sortChange)="listado.sort.set($event)"
+  (reintentar)="listado.recargar()"
+>
+  <ng-template appDataTableCell="fecha" [cellRows]="listado.datos()?.items" let-acceso>
+    <span class="whitespace-nowrap">{{ fechaHora(acceso.fecha) }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="usuario" [cellRows]="listado.datos()?.items" let-acceso>
+    <span class="font-mono text-xs">{{ acceso.usuario ?? '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="evento" [cellRows]="listado.datos()?.items" let-acceso>
+    <!-- Risky events carry an icon AND their text (never only color) and a tooltip that says what they mean. -->
+    <span [attr.title]="de(acceso.evento).descripcion">
+      <app-status-chip [texto]="de(acceso.evento).etiqueta" [tono]="de(acceso.evento).tono" />
+    </span>
+  </ng-template>
+  <ng-template appDataTableCell="ip" [cellRows]="listado.datos()?.items" let-acceso>
+    <span class="font-mono text-xs">{{ acceso.ip ?? '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="dispositivo" [cellRows]="listado.datos()?.items" let-acceso>
+    <span class="whitespace-nowrap text-muted-foreground" [attr.title]="acceso.user_agent">{{ dispositivo(acceso.user_agent) }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="detalle" [cellRows]="listado.datos()?.items" let-acceso>
+    <span class="block max-w-64 truncate text-muted-foreground" [attr.title]="acceso.detalle">{{ acceso.detalle ?? '—' }}</span>
+  </ng-template>
+</app-server-data-table>

@@ -1,0 +1,288 @@
+<app-page-header title="Punto de venta" description="Arma el ticket, elige cómo se paga y cobra. El servidor calcula los precios y los totales definitivos." />
+
+@if (confirmada(); as venta) {
+  <section class="sila-card mx-auto max-w-2xl p-6" aria-labelledby="venta-ok-titulo" data-testid="venta-confirmada">
+    <div class="mb-4 flex items-center gap-2">
+      <app-icon name="lucideCircleCheck" class="size-6 text-success" aria-hidden="true" />
+      <h2 id="venta-ok-titulo" class="text-lg font-semibold">Venta registrada</h2>
+    </div>
+    <app-venta-resumen [detalle]="venta" />
+    <div class="mt-6 flex flex-wrap gap-2">
+      <button type="button" class="sila-btn sila-btn-primary" (click)="nuevaVenta()">Nueva venta</button>
+      <button type="button" class="sila-btn sila-btn-outline" (click)="imprimir()">
+        <app-icon name="lucidePrinter" class="size-4" aria-hidden="true" />
+        Imprimir ticket
+      </button>
+      <a routerLink="/ventas" class="sila-btn sila-btn-ghost">Ver en el historial</a>
+    </div>
+  </section>
+} @else {
+  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
+    <!-- Zone 1: products -->
+    <section aria-labelledby="pv-productos">
+      <h2 id="pv-productos" class="sr-only">Productos</h2>
+      <div class="mb-4 flex flex-wrap items-end gap-3">
+        <div class="min-w-0 flex-1">
+          <label for="pv-buscador" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar por nombre o SKU</label>
+          <input
+            #buscador
+            id="pv-buscador"
+            type="search"
+            class="sila-input"
+            placeholder="Escribe o escanea el código y pulsa Enter"
+            autocomplete="off"
+            maxlength="100"
+            [value]="texto.crudo()"
+            (input)="texto.crudo.set($any($event.target).value)"
+            (keydown.enter)="alEnter()"
+          />
+        </div>
+        <label class="flex items-center gap-2 pb-2 text-sm">
+          <input type="checkbox" class="size-4" [checked]="soloConStock()" (change)="soloConStock.set($any($event.target).checked)" />
+          Solo con stock
+        </label>
+      </div>
+
+      @if (productos.error()) {
+        <div role="alert" class="sila-card p-6 text-center">
+          <p class="mb-3 font-medium">No se pudieron cargar los productos.</p>
+          <button type="button" class="sila-btn sila-btn-outline" (click)="productos.reload()">Reintentar</button>
+        </div>
+      } @else if (productos.isLoading() && items().length === 0) {
+        <p class="text-sm text-muted-foreground" aria-busy="true">Cargando productos…</p>
+      } @else if (items().length === 0) {
+        <p class="sila-card p-6 text-center text-sm text-muted-foreground">No hay productos que coincidan.</p>
+      } @else {
+        <ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Productos disponibles">
+          @for (p of items(); track p.id_producto) {
+            <li>
+              <button
+                type="button"
+                class="sila-card flex h-full w-full flex-col gap-1 p-3 text-start transition-colors hover:border-primary focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
+                [disabled]="p.stock_actual <= 0"
+                (click)="agregar(p)"
+              >
+                <span class="font-medium">{{ p.producto }}</span>
+                <span class="font-mono text-xs text-muted-foreground">{{ p.codigo_sku }}</span>
+                <span class="mt-1 text-lg font-bold tabular-nums">{{ cop(p.precio_aplicable) }}</span>
+                @if (p.precio_pactado !== null) {
+                  <span class="inline-flex w-fit items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-medium">
+                    <app-icon name="lucideHandshake" class="size-3.5" aria-hidden="true" />
+                    Precio pactado
+                  </span>
+                  <span class="text-xs text-muted-foreground">
+                    {{ p.precio_pactado - p.precio_base >= 0 ? '+ ' : '− ' }}{{ cop(p.precio_pactado - p.precio_base < 0 ? p.precio_base - p.precio_pactado : p.precio_pactado - p.precio_base) }}
+                    {{ p.precio_pactado - p.precio_base >= 0 ? 'sobre' : 'bajo' }} el de lista
+                  </span>
+                }
+                @if (p.stock_actual <= 0) {
+                  <span class="text-xs font-semibold text-destructive">Sin stock</span>
+                } @else {
+                  <span class="text-xs text-muted-foreground">Stock: {{ numero(p.stock_actual) }} {{ p.unidad_medida }}</span>
+                }
+              </button>
+            </li>
+          }
+        </ul>
+        @if (totalCoincidencias() > items().length) {
+          <p class="mt-3 text-xs text-muted-foreground">Mostrando {{ items().length }} de {{ totalCoincidencias() }} productos. Escribe para afinar la búsqueda.</p>
+        }
+      }
+    </section>
+
+    <!-- Zone 2: ticket -->
+    <section class="sila-card h-fit space-y-4 p-4 lg:sticky lg:top-4" aria-labelledby="pv-ticket">
+      <h2 id="pv-ticket" class="text-base font-semibold">Ticket</h2>
+
+      <div class="space-y-1.5">
+        <label for="pv-cliente" class="text-sm font-medium">Cliente</label>
+        <app-cliente-selector idCampo="pv-cliente" [valor]="cliente()?.id_cliente ?? null" [preseleccionado]="consumidorFinal()" [etiquetaVacia]="null" (clienteElegido)="cambiarCliente($event)" />
+        @if (cliente(); as c) {
+          <p class="text-xs text-muted-foreground" data-testid="cupo-cliente">
+            @if (esConsumidorFinal()) {
+              Consumidor final: solo contado.
+            } @else {
+              Cupo: {{ cop(c.limite_credito) }} · Debe: {{ cop(c.saldo_deudor) }} · Disponible: {{ cop(cupoDisponible()) }}
+            }
+          </p>
+        }
+        @if (avisoPrecios(); as aviso) {
+          <p class="rounded-md bg-warning/15 px-3 py-2 text-xs" role="status" data-testid="aviso-precios">{{ aviso }}</p>
+        }
+      </div>
+
+      <fieldset class="space-y-2">
+        <legend class="text-sm font-medium">Tipo de venta</legend>
+        <div class="inline-flex gap-1 rounded-lg bg-muted p-1" role="radiogroup" aria-label="Tipo de venta">
+          <button type="button" role="radio" class="sila-tab" [class.sila-tab-active]="tipo() === 'CONTADO'" [attr.aria-checked]="tipo() === 'CONTADO'" (click)="tipo.set('CONTADO')">Contado</button>
+          <button
+            type="button"
+            role="radio"
+            class="sila-tab disabled:opacity-50"
+            [class.sila-tab-active]="tipo() === 'CREDITO'"
+            [attr.aria-checked]="tipo() === 'CREDITO'"
+            [disabled]="motivoSinCredito() !== null"
+            (click)="tipo.set('CREDITO')"
+          >
+            Crédito
+          </button>
+        </div>
+        @if (motivoSinCredito(); as motivo) {
+          <p class="text-xs text-muted-foreground" data-testid="motivo-sin-credito">Crédito no disponible: {{ motivo }}</p>
+        }
+        @if (tipo() === 'CREDITO') {
+          <p class="text-xs">Quedará como deuda del cliente. @if (plazoCredito() !== null) { Vence en {{ plazoCredito() }} días. }</p>
+          @if (superaCupo()) {
+            <p class="flex items-start gap-1.5 rounded-md bg-warning/15 px-3 py-2 text-xs" role="status">
+              <app-icon name="lucideTriangleAlert" class="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
+              El total supera el cupo disponible ({{ cop(cupoDisponible()) }}). El servidor decide si la acepta.
+            </p>
+          }
+        }
+      </fieldset>
+
+      <!-- Lines -->
+      @if (lineas().length === 0) {
+        <p class="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Elige productos de la izquierda para armar la venta.</p>
+      } @else {
+        <ul class="divide-y divide-border" aria-label="Líneas del ticket">
+          @for (l of lineas(); track l.id_producto; let i = $index) {
+            <li class="space-y-1 py-2 text-sm">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <p class="font-medium">{{ l.producto }}</p>
+                  <p class="text-xs text-muted-foreground">
+                    {{ cop(l.precio_unitario) }} c/u
+                    @if (l.pactado) {
+                      <span class="ms-1 rounded bg-primary/15 px-1.5 py-0.5 font-medium">pactado</span>
+                    }
+                    · IVA {{ numero(l.tarifa_iva) }} %
+                  </p>
+                </div>
+                <button type="button" class="sila-btn sila-btn-ghost h-8 w-8 shrink-0 px-0" (click)="quitar(i)">
+                  <app-icon name="lucideTrash2" class="size-4" aria-hidden="true" />
+                  <span class="sr-only">Quitar {{ l.producto }}</span>
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                  <label [for]="'pv-cant-' + i" class="sr-only">Cantidad de {{ l.producto }}</label>
+                  <input
+                    [id]="'pv-cant-' + i"
+                    type="text"
+                    inputmode="decimal"
+                    class="sila-input h-9 w-24 text-end"
+                    [value]="l.cantidadTexto"
+                    [attr.aria-invalid]="cantidadInvalida(l) ? 'true' : null"
+                    (input)="cambiarCantidad(i, $any($event.target).value)"
+                  />
+                  <span class="text-xs text-muted-foreground">{{ l.unidad_medida }}</span>
+                </div>
+                <div class="text-end tabular-nums">
+                  <p class="font-medium">{{ cop(totales().lineas[i].subtotal) }}</p>
+                  <p class="text-xs text-muted-foreground">IVA {{ cop(totales().lineas[i].iva) }}</p>
+                </div>
+              </div>
+              @if (cantidadInvalida(l)) {
+                <p class="text-xs font-medium text-destructive">Cantidad mayor que 0, con máximo 2 decimales.</p>
+              } @else if (superaStock(l)) {
+                <p class="text-xs font-medium text-warning" role="status">Supera el stock ({{ numero(l.stock) }} {{ l.unidad_medida }}). El servidor lo rechazará.</p>
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      <dl class="space-y-1 border-t border-border pt-3 text-sm">
+        <div class="flex justify-between"><dt>Subtotal</dt><dd class="tabular-nums" data-testid="subtotal">{{ cop(totales().subtotal) }}</dd></div>
+        <div class="flex justify-between"><dt>IVA</dt><dd class="tabular-nums" data-testid="iva">{{ cop(totales().iva) }}</dd></div>
+        <div class="flex items-baseline justify-between text-2xl font-bold"><dt>TOTAL</dt><dd class="tabular-nums" data-testid="total">{{ cop(totales().total) }}</dd></div>
+      </dl>
+
+      <!-- Payments (cash sale) -->
+      @if (tipo() === 'CONTADO') {
+        <fieldset class="space-y-3 border-t border-border pt-3">
+          <legend class="text-sm font-medium">Pago</legend>
+          @for (p of pagos(); track p.uid; let i = $index) {
+            <div class="space-y-1.5 rounded-md bg-muted/50 p-2">
+              <div class="flex items-end gap-2">
+                <div class="flex-1">
+                  <label [for]="'pv-metodo-' + p.uid" class="mb-1 block text-xs text-muted-foreground">Medio</label>
+                  <select [id]="'pv-metodo-' + p.uid" class="sila-select h-9" (change)="cambiarPago(p.uid, { metodo: $any($event.target).value })">
+                    @for (m of metodos; track m.valor) {
+                      <option [value]="m.valor" [selected]="m.valor === p.metodo">{{ m.etiqueta }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="w-32">
+                  <label [for]="'pv-monto-' + p.uid" class="mb-1 block text-xs text-muted-foreground">Monto</label>
+                  <input
+                    [id]="'pv-monto-' + p.uid"
+                    type="text"
+                    inputmode="decimal"
+                    class="sila-input h-9 text-end"
+                    [value]="p.montoTexto"
+                    (input)="cambiarPago(p.uid, { montoTexto: $any($event.target).value })"
+                  />
+                </div>
+                @if (pagos().length > 1) {
+                  <button type="button" class="sila-btn sila-btn-ghost h-9 w-9 shrink-0 px-0" (click)="quitarPago(p.uid)">
+                    <app-icon name="lucideTrash2" class="size-4" aria-hidden="true" />
+                    <span class="sr-only">Quitar este medio de pago</span>
+                  </button>
+                }
+              </div>
+              @if (pideReferencia(p.metodo)) {
+                <div>
+                  <label [for]="'pv-ref-' + p.uid" class="mb-1 block text-xs text-muted-foreground">Referencia (opcional)</label>
+                  <input [id]="'pv-ref-' + p.uid" type="text" class="sila-input h-9" maxlength="60" [value]="p.referencia" (input)="cambiarPago(p.uid, { referencia: $any($event.target).value })" />
+                </div>
+              }
+              <button type="button" class="text-xs underline" (click)="completarCon(p.uid)">Completar con este medio</button>
+            </div>
+          }
+          <div class="flex flex-wrap gap-2">
+            <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" [disabled]="pagos().length >= maxPagos" (click)="agregarPago()">Agregar otro medio</button>
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" [disabled]="totales().total <= 0" (click)="todoEnEfectivo()">Todo en efectivo</button>
+          </div>
+
+          <p class="rounded-md px-3 py-2 text-sm font-medium" [class]="falta() === 0 && totales().total > 0 ? 'bg-success/15' : 'bg-muted'" role="status" data-testid="estado-pago">
+            Pagado {{ cop(pagado()) }} de {{ cop(totales().total) }} —
+            @if (totales().total <= 0) {
+              Agrega productos
+            } @else if (falta() > 0) {
+              Falta {{ cop(falta()) }}
+            } @else if (falta() < 0) {
+              Sobra {{ cop(-falta()) }}
+            } @else {
+              Completo
+            }
+          </p>
+
+          @if (efectivo() > 0) {
+            <div class="space-y-1">
+              <label for="pv-recibido" class="text-xs text-muted-foreground">Recibido en efectivo (solo para calcular el cambio)</label>
+              <input id="pv-recibido" type="text" inputmode="decimal" class="sila-input h-9 w-40 text-end" [value]="recibido()" (input)="recibido.set($any($event.target).value)" />
+              @if (cambio() > 0) {
+                <p class="text-base font-bold" data-testid="cambio" role="status">Cambio: {{ cop(cambio()) }}</p>
+              }
+            </div>
+          }
+        </fieldset>
+      }
+
+      @if (errorVenta(); as mensaje) {
+        <p role="alert" class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm" data-testid="error-venta">{{ mensaje }}</p>
+      }
+
+      <div class="space-y-1.5">
+        <button type="button" class="sila-btn sila-btn-primary h-11 w-full text-base" [disabled]="bloqueo() !== null || enviando()" [attr.aria-busy]="enviando()" (click)="cobrar()">
+          {{ enviando() ? 'Procesando…' : tipo() === 'CONTADO' ? 'Cobrar' : 'Registrar crédito' }}
+        </button>
+        @if (bloqueo(); as motivo) {
+          <p class="text-center text-xs text-muted-foreground" data-testid="motivo-bloqueo">{{ motivo }}</p>
+        }
+      </div>
+    </section>
+  </div>
+}

@@ -1,0 +1,273 @@
+/* Custom component-level classes carried over from the original template's @utility layer. */
+
+@layer components {
+  .sila-card {
+    border-radius: calc(var(--radius) + 4px);
+    border: 1px solid var(--border);
+    background-color: var(--card);
+    color: var(--card-foreground);
+    box-shadow: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;
+  }
+
+  .sila-btn {
+    display: inline-flex;
+    height: calc(var(--spacing) * 9);
+    justify-content: center;
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
+    border-radius: calc(var(--radius) - 2px);
+    padding-inline: calc(var(--spacing) * 4);
+    padding-block: calc(var(--spacing) * 2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+    transition-property: all;
+    transition-duration: 150ms;
+    outline-style: none;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .sila-btn:disabled {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .sila-btn:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+  .sila-btn-sm {
+    height: calc(var(--spacing) * 8);
+    gap: calc(var(--spacing) * 1.5);
+    padding-inline: calc(var(--spacing) * 3);
+  }
+
+  .sila-btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+  }
+  .sila-btn-primary:hover {
+    opacity: 0.9;
+  }
+  .sila-btn-secondary {
+    background-color: var(--secondary);
+    color: var(--secondary-foreground);
+  }
+  .sila-btn-secondary:hover {
+    opacity: 0.85;
+  }
+  .sila-btn-outline {
+    border: 1px solid var(--input);
+    background-color: transparent;
+    box-shadow: 0 1px 2px 0 #0000000d;
+  }
+  .sila-btn-outline:hover {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+  .sila-btn-ghost {
+    background-color: transparent;
+  }
+  .sila-btn-ghost:hover {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .sila-input,
+  .sila-select,
+  .sila-textarea {
+    height: calc(var(--spacing) * 9);
+    width: 100%;
+    min-width: 0;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid var(--input);
+    background-color: transparent;
+    padding-inline: calc(var(--spacing) * 3);
+    padding-block: var(--spacing);
+    font-size: var(--text-sm);
+    box-shadow: 0 1px 2px 0 #0000000d;
+    transition: color 150ms, box-shadow 150ms;
+    outline-style: none;
+  }
+  .sila-textarea {
+    height: auto;
+    min-height: calc(var(--spacing) * 20);
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .sila-input::placeholder,
+  .sila-textarea::placeholder {
+    color: var(--muted-foreground);
+  }
+  .sila-input:disabled,
+  .sila-select:disabled,
+  .sila-textarea:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .sila-input:focus-visible,
+  .sila-select:focus-visible,
+  .sila-textarea:focus-visible {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+  .dark .sila-input,
+  .dark .sila-select {
+    background-color: var(--input);
+  }
+
+  .sila-checkbox {
+    width: calc(var(--spacing) * 4);
+    height: calc(var(--spacing) * 4);
+    accent-color: var(--primary);
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .sila-switch {
+    position: relative;
+    appearance: none;
+    width: 2.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background: var(--input);
+    cursor: pointer;
+    transition: background 200ms;
+  }
+  .sila-switch:checked {
+    background: var(--primary);
+  }
+  .sila-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 200ms;
+  }
+  .sila-switch:checked::after {
+    transform: translateX(1rem);
+  }
+  .sila-switch:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .sila-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--spacing) * 1.5);
+    border-radius: calc(var(--radius) - 2px);
+    padding-inline: calc(var(--spacing) * 3);
+    padding-block: calc(var(--spacing) * 1.5);
+    font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--muted-foreground);
+    transition: all 150ms;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+  }
+  .sila-tab-active {
+    background-color: var(--background);
+    color: var(--foreground);
+    box-shadow: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a;
+  }
+
+  .sila-separator {
+    width: 100%;
+    height: 1px;
+    background-color: var(--border);
+    flex-shrink: 0;
+  }
+
+  .sila-dialog {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--popover);
+    color: var(--popover-foreground);
+    width: calc(100% - 2rem);
+    max-width: 28rem;
+    margin: auto;
+    padding: 0;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+  }
+  .sila-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  /* Sidebar shell */
+  .sila-sidebar-aside {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: var(--sidebar-width);
+    transition: transform 300ms ease-in-out, width 300ms ease-in-out;
+  }
+  .sila-sidebar-aside.sila-sidebar-collapsed {
+    width: var(--sidebar-width-collapsed);
+  }
+  .sila-content {
+    margin-inline-start: var(--sidebar-width);
+    transition: margin 300ms ease-in-out;
+  }
+  .sila-content.sila-content-collapsed {
+    margin-inline-start: var(--sidebar-width-collapsed);
+  }
+  @media (max-width: 1023px) {
+    .sila-sidebar-aside {
+      transform: translateX(-100%);
+    }
+    .sila-sidebar-aside.sila-sidebar-open {
+      transform: translateX(0);
+    }
+    .sila-content {
+      margin-inline-start: 0;
+    }
+  }
+
+  .sila-sidebar-collapsed .sidebar-brand-text,
+  .sila-sidebar-collapsed .sidebar-label,
+  .sila-sidebar-collapsed .sidebar-group-label,
+  .sila-sidebar-collapsed .sidebar-group-chevron,
+  .sila-sidebar-collapsed .sidebar-badge,
+  .sila-sidebar-collapsed .sidebar-user-info {
+    display: none;
+  }
+  .sila-sidebar-collapsed .sidebar-nav-item {
+    justify-content: center;
+  }
+
+  .nav-group-body {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 200ms ease-in-out, opacity 200ms ease-in-out;
+  }
+  .nav-group-body > div {
+    overflow: hidden;
+  }
+  .nav-group-body.nav-group-collapsed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+
+  .scrollbar-fade {
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 200ms;
+  }
+  .scrollbar-fade:hover,
+  .scrollbar-fade:focus-within {
+    scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+  }
+  .dark .scrollbar-fade:hover,
+  .dark .scrollbar-fade:focus-within {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+}

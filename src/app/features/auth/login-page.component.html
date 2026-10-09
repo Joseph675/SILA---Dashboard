@@ -1,0 +1,130 @@
+<main class="relative grid min-h-screen overflow-hidden bg-background lg:grid-cols-[1.1fr_1fr]">
+  <!-- Decorative panel (large screens): brand gradient, soft blobs and a dot grid. Purely visual. -->
+  <aside class="relative hidden flex-col justify-between overflow-hidden bg-linear-to-br from-primary via-primary to-chart-2 p-12 text-primary-foreground lg:flex" aria-hidden="true">
+    <div class="pointer-events-none absolute -start-24 -top-24 size-96 rounded-full bg-white/15 blur-3xl"></div>
+    <div class="pointer-events-none absolute -bottom-32 -end-20 size-[28rem] rounded-full bg-black/20 blur-3xl"></div>
+    <div class="pointer-events-none absolute inset-0 opacity-25 [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:22px_22px]"></div>
+
+    <div class="relative flex items-center gap-3">
+      <div class="grid size-11 place-items-center rounded-xl bg-white/20 ring-1 ring-white/30 backdrop-blur">
+        <app-icon name="lucideMilk" class="size-6" />
+      </div>
+      <span class="text-lg font-bold tracking-tight">SILA · Llanolat</span>
+    </div>
+
+    <div class="relative max-w-md space-y-8">
+      <div class="space-y-3">
+        <h2 class="text-4xl font-bold leading-tight tracking-tight">Del ordeño a la caja, todo en un solo lugar.</h2>
+        <p class="text-base text-primary-foreground/80">Acopio de leche, producción, inventario, ventas y cartera de tu empresa de lácteos.</p>
+      </div>
+      <ul class="space-y-3 text-sm">
+        <li class="flex items-center gap-3"><span class="grid size-8 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25"><app-icon name="lucideScanBarcode" class="size-4" /></span>Punto de venta rápido, con pago mixto</li>
+        <li class="flex items-center gap-3"><span class="grid size-8 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25"><app-icon name="lucideWarehouse" class="size-4" /></span>Inventario y alertas de caducidad al día</li>
+        <li class="flex items-center gap-3"><span class="grid size-8 place-items-center rounded-lg bg-white/15 ring-1 ring-white/25"><app-icon name="lucideShieldCheck" class="size-4" /></span>Acceso protegido con segundo factor</li>
+      </ul>
+    </div>
+
+    <p class="relative text-xs text-primary-foreground/70">© Llanolat · Colombia</p>
+  </aside>
+
+  <!-- Form side. On small screens the same gradient shows softly behind the card. -->
+  <section class="relative grid place-items-center p-4 sm:p-8">
+    <div class="pointer-events-none absolute inset-0 bg-linear-to-br from-primary/15 via-transparent to-chart-2/10 lg:hidden" aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -end-20 -top-20 size-72 rounded-full bg-primary/20 blur-3xl lg:hidden" aria-hidden="true"></div>
+  <div class="sila-card relative w-full max-w-md p-6 shadow-xl sm:p-8">
+    <div class="mb-6 flex items-center gap-3">
+      <div class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground">
+        <app-icon name="lucideMilk" class="size-5" aria-hidden="true" />
+      </div>
+      <div>
+        <p class="text-sm font-bold tracking-tight">SILA · Llanolat</p>
+        <p class="text-xs text-muted-foreground">Sistema de gestión de lácteos</p>
+      </div>
+    </div>
+
+    <h1 class="mb-1 text-xl font-semibold tracking-tight" [class.sr-only]="paso() === 'codigos-respaldo'">{{ titulo() }}</h1>
+
+    @if (aviso(); as mensaje) {
+      <p class="mb-4 rounded-md bg-primary/10 px-3 py-2 text-sm" role="status">{{ mensaje }}</p>
+    }
+
+    @switch (paso()) {
+      @case ('credenciales') {
+        <p class="mb-4 text-sm text-muted-foreground">Ingresa con tu usuario y tu clave.</p>
+        <form [formGroup]="form" (ngSubmit)="enviarCredenciales()" novalidate class="space-y-4">
+          <app-form-field etiqueta="Usuario" [obligatorio]="true">
+            <input class="sila-input" formControlName="usuario" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="100" />
+          </app-form-field>
+
+          <app-form-field etiqueta="Clave" [obligatorio]="true">
+            <div class="relative">
+              <input class="sila-input pe-11" [type]="verClave() ? 'text' : 'password'" formControlName="clave" autocomplete="current-password" maxlength="200" />
+              <button
+                type="button"
+                class="absolute end-1 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:text-foreground"
+                [attr.aria-label]="verClave() ? 'Ocultar la clave' : 'Mostrar la clave'"
+                [attr.aria-pressed]="verClave()"
+                (click)="verClave.set(!verClave())"
+              >
+                <app-icon [name]="verClave() ? 'lucideEyeOff' : 'lucideEye'" class="size-4" aria-hidden="true" />
+              </button>
+            </div>
+          </app-form-field>
+
+          @if (error(); as mensaje) {
+            <p class="rounded-md bg-destructive/15 px-3 py-2 text-sm" role="alert">{{ mensaje }}</p>
+          }
+
+          <button type="submit" class="sila-btn sila-btn-primary w-full" [disabled]="ocupado()" [attr.aria-busy]="ocupado()">
+            {{ ocupado() ? 'Procesando…' : 'Ingresar' }}
+          </button>
+        </form>
+      }
+
+      @case ('cambiar-clave') {
+        <p class="mb-4 text-sm text-muted-foreground">
+          Es tu primer ingreso o un administrador restableció tu clave. Escribe la clave temporal que te dieron y elige una nueva.
+        </p>
+        <app-cambiar-clave-form
+          etiquetaActual="Clave actual (la temporal)"
+          textoBoton="Cambiar clave y continuar"
+          [ocupado]="ocupado()"
+          [error]="error()"
+          [enfocar]="true"
+          (cambiar)="enviarCambioClave($event)"
+        />
+      }
+
+      @case ('mfa-enrolar') {
+        <p class="mb-4 text-sm text-muted-foreground">Para proteger tu cuenta necesitas un segundo factor: un código que genera tu celular.</p>
+        <app-mfa-enrolar [config]="mfaConfig()" [ocupado]="ocupado()" [error]="error()" [enfocar]="true" (activar)="enviarActivacion($event)" />
+      }
+
+      @case ('mfa-codigo') {
+        @if (usarRespaldo()) {
+          <p class="mb-4 text-sm text-muted-foreground">Escribe uno de los códigos de respaldo que guardaste al activar el segundo factor.</p>
+          <app-mfa-respaldo-form [ocupado]="ocupado()" [error]="error()" [enfocar]="true" (codigo)="enviarRespaldo($event)" />
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarRespaldo.set(false)">Usar el código de la aplicación</button>
+        } @else {
+          <p class="mb-4 text-sm text-muted-foreground">Abre tu aplicación de autenticación y escribe el código de 6 dígitos.</p>
+          <app-mfa-codigo-form textoBoton="Verificar" [ocupado]="ocupado()" [error]="error()" [enfocar]="true" (codigo)="enviarVerificacion($event)" />
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarRespaldo.set(true)">No tengo mi teléfono — usar un código de respaldo</button>
+        }
+      }
+
+      @case ('codigos-respaldo') {
+        @if (codigosRespaldo(); as codigos) {
+          <app-codigos-respaldo [codigos]="codigos" [usuario]="usuarioActual()" (continuar)="continuarTrasCodigos()" />
+        }
+      }
+    }
+
+    @if (paso() !== 'credenciales' && paso() !== 'codigos-respaldo') {
+      <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-4" [disabled]="ocupado()" (click)="volver()">
+        <app-icon name="lucideArrowLeft" class="size-4" aria-hidden="true" />
+        Volver
+      </button>
+    }
+  </div>
+  </section>
+</main>

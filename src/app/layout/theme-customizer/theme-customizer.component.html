@@ -1,0 +1,100 @@
+<div
+  class="fixed inset-0 z-[60] bg-black/50 transition-opacity"
+  [class.opacity-0]="!state.open()"
+  [class.pointer-events-none]="!state.open()"
+  (click)="state.close()"
+></div>
+
+<aside
+  class="fixed inset-y-0 end-0 z-[61] flex w-80 max-w-[85vw] flex-col border-s border-border bg-card shadow-2xl transition-transform duration-300"
+  [class.translate-x-full]="!state.open()"
+  role="dialog"
+  aria-label="Theme customizer"
+>
+  <div class="flex items-center justify-between border-b border-border p-4">
+    <div>
+      <h2 class="text-sm font-semibold">Customize</h2>
+      <p class="text-xs text-muted-foreground">Personalize the look &amp; feel</p>
+    </div>
+    <button
+      type="button"
+      class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      aria-label="Close"
+      (click)="state.close()"
+    >
+      <app-icon name="lucideX" class="h-4 w-4" />
+    </button>
+  </div>
+
+  <div class="flex-1 space-y-6 overflow-y-auto p-4">
+    <div class="space-y-2">
+      <p class="text-xs font-medium text-muted-foreground">Theme</p>
+      <div class="flex items-center gap-1 rounded-lg bg-muted p-1">
+        <button type="button" class="sila-tab flex-1 justify-center" [class.sila-tab-active]="theme.mode() === 'light'" (click)="setMode('light')">
+          <app-icon name="lucideSun" class="h-4 w-4" />
+          Light
+        </button>
+        <button type="button" class="sila-tab flex-1 justify-center" [class.sila-tab-active]="theme.mode() === 'dark'" (click)="setMode('dark')">
+          <app-icon name="lucideMoon" class="h-4 w-4" />
+          Dark
+        </button>
+        <button type="button" class="sila-tab flex-1 justify-center" [class.sila-tab-active]="theme.mode() === 'auto'" (click)="setMode('auto')">
+          <app-icon name="lucideSettings" class="h-4 w-4" />
+          Auto
+        </button>
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-xs font-medium text-muted-foreground">Accent color</p>
+      <div class="flex flex-wrap gap-3">
+        @for (swatch of accents; track swatch.value) {
+          <button
+            type="button"
+            class="h-8 w-8 rounded-full ring-2 ring-offset-2 ring-offset-card transition-all"
+            [class]="swatch.colorClass"
+            [class.ring-ring]="theme.accent() === swatch.value"
+            [class.ring-transparent]="theme.accent() !== swatch.value"
+            [attr.aria-label]="swatch.value"
+            (click)="setAccent(swatch.value)"
+          ></button>
+        }
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-xs font-medium text-muted-foreground">Border radius</p>
+      <div class="flex items-center gap-1 rounded-lg bg-muted p-1">
+        @for (opt of radiusOptions; track opt.value) {
+          <button
+            type="button"
+            class="sila-tab flex-1 justify-center px-2 text-xs"
+            [class.sila-tab-active]="theme.radius() === opt.value"
+            (click)="setRadius(opt.value)"
+          >
+            {{ opt.label }}
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <p class="text-xs font-medium text-muted-foreground">Direction</p>
+      <div class="flex items-center gap-1 rounded-lg bg-muted p-1">
+        <button type="button" class="sila-tab flex-1 justify-center" [class.sila-tab-active]="theme.direction() === 'ltr'" (click)="setDirection('ltr')">
+          LTR
+        </button>
+        <button type="button" class="sila-tab flex-1 justify-center" [class.sila-tab-active]="theme.direction() === 'rtl'" (click)="setDirection('rtl')">
+          RTL
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="border-t border-border p-4">
+    <button type="button" class="sila-btn sila-btn-outline w-full" (click)="theme.reset()">
+      <app-icon name="lucideRefreshCw" class="h-4 w-4" />
+      Reset to defaults
+    </button>
+  </div>
+</aside>

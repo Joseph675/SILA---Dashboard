@@ -1,0 +1,212 @@
+/*
+ * Design tokens reverse-engineered from the original static export
+ * (oklch color values, spacing radius, sidebar tokens, chart palette).
+ * Accent variants "violet", "rose", "green" and "amber" were not present in the
+ * purged source CSS (only "teal" default + "blue" survived Tailwind's JIT purge),
+ * so their dark-mode values were derived from the same light->dark formula the
+ * two known accents (teal, blue) both follow: +10% lightness, +0.015 chroma, same hue.
+ */
+
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/geist-sans-variable.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Geist Mono Variable";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/geist-mono-variable.woff2") format("woff2-variations");
+}
+
+:root {
+  --radius: 0.625rem;
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 72px;
+
+  --font-geist-sans: "Geist Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-geist-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --background: oklch(98.5% 0.002 230);
+  --foreground: oklch(15.5% 0.015 230);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(15.5% 0.015 230);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(15.5% 0.015 230);
+  --secondary: oklch(96% 0.005 230);
+  --secondary-foreground: oklch(20.5% 0.015 230);
+  --muted: oklch(96% 0.005 230);
+  --muted-foreground: oklch(55.6% 0.015 230);
+  --accent: oklch(96% 0.005 230);
+  --accent-foreground: oklch(20.5% 0.015 230);
+  --destructive: oklch(57.7% 0.245 27.325);
+  --destructive-foreground: oklch(98.5% 0.002 230);
+  --success: oklch(62% 0.17 145);
+  --success-foreground: oklch(98.5% 0.002 230);
+  --warning: oklch(75% 0.175 75);
+  --warning-foreground: oklch(20.5% 0.015 230);
+  --border: oklch(92.2% 0.005 230);
+  --input: oklch(92.2% 0.005 230);
+
+  --chart-2: oklch(58% 0.14 195);
+  --chart-3: oklch(60% 0.16 250);
+  --chart-4: oklch(70% 0.15 75);
+  --chart-5: oklch(60% 0.16 320);
+
+  --sidebar: oklch(100% 0 0);
+  --sidebar-foreground: oklch(25% 0.015 230);
+  --sidebar-accent: oklch(95% 0.005 230);
+  --sidebar-accent-foreground: oklch(20.5% 0.015 230);
+  --sidebar-border: oklch(92.2% 0.005 230);
+}
+
+.dark {
+  --background: oklch(7.5% 0 0);
+  --foreground: oklch(92.2% 0.005 230);
+  --card: oklch(19% 0 0);
+  --card-foreground: oklch(92.2% 0.005 230);
+  --popover: oklch(21% 0 0);
+  --popover-foreground: oklch(92.2% 0.005 230);
+  --secondary: oklch(23.5% 0 0);
+  --secondary-foreground: oklch(92.2% 0.005 230);
+  --muted: oklch(23.5% 0 0);
+  --muted-foreground: oklch(55.6% 0.015 230);
+  --accent: oklch(23.5% 0 0);
+  --accent-foreground: oklch(92.2% 0.005 230);
+  --destructive: oklch(57.7% 0.245 27.325);
+  --destructive-foreground: oklch(92.2% 0.005 230);
+  --success: oklch(62% 0.17 145);
+  --success-foreground: oklch(7.5% 0 0);
+  --warning: oklch(75% 0.175 75);
+  --warning-foreground: oklch(7.5% 0 0);
+  --border: oklch(28% 0 0);
+  --input: oklch(28% 0 0);
+
+  --chart-2: oklch(58% 0.14 195);
+  --chart-3: oklch(62% 0.16 250);
+  --chart-4: oklch(70% 0.15 75);
+  --chart-5: oklch(60% 0.16 320);
+
+  --sidebar: oklch(11% 0 0);
+  --sidebar-foreground: oklch(90% 0.005 230);
+  --sidebar-accent: oklch(20% 0 0);
+  --sidebar-accent-foreground: oklch(95% 0.005 230);
+  --sidebar-border: oklch(26% 0 0);
+}
+
+/* Accent color presets driven by [data-accent] on <html>, matching the theme customizer swatches */
+[data-accent="teal"] {
+  --primary: oklch(55% 0.175 160);
+  --ring: oklch(55% 0.175 160);
+  --sidebar-primary: oklch(60% 0.175 160);
+  --sidebar-ring: oklch(55% 0.175 160);
+  --chart-1: oklch(55% 0.175 160);
+}
+.dark[data-accent="teal"] {
+  --primary: oklch(65% 0.19 160);
+  --ring: oklch(65% 0.19 160);
+  --sidebar-primary: oklch(65% 0.19 160);
+  --sidebar-ring: oklch(65% 0.19 160);
+  --chart-1: oklch(65% 0.19 160);
+}
+
+[data-accent="blue"] {
+  --primary: oklch(55% 0.175 255);
+  --ring: oklch(55% 0.175 255);
+  --sidebar-primary: oklch(60% 0.175 255);
+  --sidebar-ring: oklch(55% 0.175 255);
+  --chart-1: oklch(55% 0.175 255);
+}
+.dark[data-accent="blue"] {
+  --primary: oklch(65% 0.19 255);
+  --ring: oklch(65% 0.19 255);
+  --sidebar-primary: oklch(65% 0.19 255);
+  --sidebar-ring: oklch(65% 0.19 255);
+  --chart-1: oklch(65% 0.19 255);
+}
+
+[data-accent="violet"] {
+  --primary: oklch(55% 0.2 300);
+  --ring: oklch(55% 0.2 300);
+  --sidebar-primary: oklch(60% 0.2 300);
+  --sidebar-ring: oklch(55% 0.2 300);
+  --chart-1: oklch(55% 0.2 300);
+}
+.dark[data-accent="violet"] {
+  --primary: oklch(65% 0.215 300);
+  --ring: oklch(65% 0.215 300);
+  --sidebar-primary: oklch(65% 0.215 300);
+  --sidebar-ring: oklch(65% 0.215 300);
+  --chart-1: oklch(65% 0.215 300);
+}
+
+[data-accent="rose"] {
+  --primary: oklch(58% 0.22 15);
+  --ring: oklch(58% 0.22 15);
+  --sidebar-primary: oklch(63% 0.22 15);
+  --sidebar-ring: oklch(58% 0.22 15);
+  --chart-1: oklch(58% 0.22 15);
+}
+.dark[data-accent="rose"] {
+  --primary: oklch(68% 0.235 15);
+  --ring: oklch(68% 0.235 15);
+  --sidebar-primary: oklch(68% 0.235 15);
+  --sidebar-ring: oklch(68% 0.235 15);
+  --chart-1: oklch(68% 0.235 15);
+}
+
+[data-accent="green"] {
+  --primary: oklch(60% 0.17 150);
+  --ring: oklch(60% 0.17 150);
+  --sidebar-primary: oklch(65% 0.17 150);
+  --sidebar-ring: oklch(60% 0.17 150);
+  --chart-1: oklch(60% 0.17 150);
+}
+.dark[data-accent="green"] {
+  --primary: oklch(70% 0.185 150);
+  --ring: oklch(70% 0.185 150);
+  --sidebar-primary: oklch(70% 0.185 150);
+  --sidebar-ring: oklch(70% 0.185 150);
+  --chart-1: oklch(70% 0.185 150);
+}
+
+[data-accent="amber"] {
+  --primary: oklch(78% 0.15 80);
+  --ring: oklch(78% 0.15 80);
+  --sidebar-primary: oklch(80% 0.15 80);
+  --sidebar-ring: oklch(78% 0.15 80);
+  --chart-1: oklch(78% 0.15 80);
+}
+.dark[data-accent="amber"] {
+  --primary: oklch(85% 0.16 80);
+  --ring: oklch(85% 0.16 80);
+  --sidebar-primary: oklch(85% 0.16 80);
+  --sidebar-ring: oklch(85% 0.16 80);
+  --chart-1: oklch(85% 0.16 80);
+}
+
+/* primary-foreground / sidebar-primary-foreground stay stable across accents */
+:root {
+  --primary-foreground: oklch(98.5% 0.002 230);
+  --sidebar-primary-foreground: oklch(98.5% 0.002 230);
+}
+.dark {
+  --primary-foreground: oklch(7.5% 0 0);
+  --sidebar-primary-foreground: oklch(7.5% 0 0);
+}
+
+/* Light sidebar: the accent text on the pale active item needs AA contrast (4.5:1),
+   so the accent is darkened a little. The dark theme keeps the accent as is. */
+:root:not(.dark) {
+  --sidebar-primary: color-mix(in oklch, var(--primary), black 10%);
+}
+
+/* Border radius presets driven by [data-radius] on <html>, matching the theme customizer */
+[data-radius="none"] { --radius: 0rem; }
+[data-radius="small"] { --radius: 0.375rem; }
+[data-radius="medium"] { --radius: 0.625rem; }
+[data-radius="large"] { --radius: 1rem; }

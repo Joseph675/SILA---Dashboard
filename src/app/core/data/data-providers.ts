@@ -1,0 +1,40 @@
+import { Provider } from '@angular/core';
+import { ACOPIO_REPOSITORY } from '../../features/acopio/data/acopio.provider';
+import { HttpAcopioRepository } from '../../features/acopio/data/http-acopio.repository';
+import { CARTERA_REPOSITORY } from '../../features/cartera/data/cartera.provider';
+import { HttpCarteraRepository } from '../../features/cartera/data/http-cartera.repository';
+import { HttpParametrosRepository } from '../../features/parametros/data/http-parametros.repository';
+import { PARAMETROS_REPOSITORY } from '../../features/parametros/data/parametros.provider';
+import { HttpPreciosClienteRepository } from '../../features/precios-cliente/data/http-precios-cliente.repository';
+import { PRECIOS_CLIENTE_REPOSITORY } from '../../features/precios-cliente/data/precios-cliente.provider';
+import { HttpVentasRepository } from '../../features/ventas/data/http-ventas.repository';
+import { VENTAS_REPOSITORY } from '../../features/ventas/data/ventas.provider';
+import { AUDITORIA_REPOSITORY } from '../../features/auditoria/data/auditoria.provider';
+import { HttpAuditoriaRepository } from '../../features/auditoria/data/http-auditoria.repository';
+import { CATALOGOS_REPOSITORY } from '../../features/catalogos/data/catalogos.provider';
+import { HttpCatalogosRepository } from '../../features/catalogos/data/http-catalogos.repository';
+import { HttpInventarioRepository } from '../../features/inventario/data/http-inventario.repository';
+import { INVENTARIO_REPOSITORY } from '../../features/inventario/data/inventario.provider';
+import { HttpPeriodosRepository } from '../../features/periodos/data/http-periodos.repository';
+import { PERIODOS_REPOSITORY } from '../../features/periodos/data/periodos.provider';
+import { HttpProduccionRepository } from '../../features/produccion/data/http-produccion.repository';
+import { PRODUCCION_REPOSITORY } from '../../features/produccion/data/produccion.provider';
+import { HttpUsuariosRepository } from '../../features/usuarios/data/http-usuarios.repository';
+import { USUARIOS_REPOSITORY } from '../../features/usuarios/data/usuarios.provider';
+
+/** Binds every repository token to its HTTP implementation. Development and production use the same one. */
+export function provideDataLayer(): Provider[] {
+  return [
+    { provide: CATALOGOS_REPOSITORY, useExisting: HttpCatalogosRepository },
+    { provide: PERIODOS_REPOSITORY, useExisting: HttpPeriodosRepository },
+    { provide: USUARIOS_REPOSITORY, useExisting: HttpUsuariosRepository },
+    { provide: AUDITORIA_REPOSITORY, useExisting: HttpAuditoriaRepository },
+    { provide: ACOPIO_REPOSITORY, useExisting: HttpAcopioRepository },
+    { provide: PRODUCCION_REPOSITORY, useExisting: HttpProduccionRepository },
+    { provide: INVENTARIO_REPOSITORY, useExisting: HttpInventarioRepository },
+    { provide: VENTAS_REPOSITORY, useExisting: HttpVentasRepository },
+    { provide: PRECIOS_CLIENTE_REPOSITORY, useExisting: HttpPreciosClienteRepository },
+    { provide: CARTERA_REPOSITORY, useExisting: HttpCarteraRepository },
+    { provide: PARAMETROS_REPOSITORY, useExisting: HttpParametrosRepository },
+  ];
+}

@@ -1,0 +1,130 @@
+<div
+  class="sila-sidebar-overlay fixed inset-0 z-40 bg-black/50 lg:hidden"
+  [class.hidden]="!sidebarState.mobileOpen()"
+  (click)="sidebarState.closeMobile()"
+></div>
+
+<aside
+  class="sila-sidebar-aside h-screen border-e border-sidebar-border bg-sidebar"
+  [class.sila-sidebar-collapsed]="sidebarState.collapsed()"
+  [class.sila-sidebar-open]="sidebarState.mobileOpen()"
+>
+  <div class="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
+    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary">
+      <app-icon name="lucideZap" class="h-4 w-4 text-sidebar-primary-foreground" />
+    </div>
+    <div class="sidebar-brand-text flex flex-col">
+      <span class="text-sm font-bold tracking-tight text-sidebar-foreground">SILA</span>
+      <span class="text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/65">Dashboard</span>
+    </div>
+    <button
+      type="button"
+      class="ms-auto flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
+      aria-label="Cerrar menú"
+      (click)="sidebarState.closeMobile()"
+    >
+      <app-icon name="lucideX" class="h-4 w-4" />
+    </button>
+  </div>
+
+  <nav class="scrollbar-fade flex-1 space-y-3 overflow-y-auto px-3 py-4" aria-label="Navegación principal">
+    @for (group of groups(); track group.label) {
+      <div>
+        <button
+          type="button"
+          class="sidebar-group-toggle flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-sidebar-foreground/65 transition-colors hover:text-sidebar-foreground/90"
+          (click)="toggleGroup(group.label)"
+        >
+          <span class="sidebar-group-label flex-1 text-start">{{ group.label }}</span>
+          <app-icon
+            name="lucideChevronRight"
+            class="sidebar-group-chevron size-3 shrink-0 transition-transform"
+            [class.rotate-90]="!isGroupCollapsed(group.label)"
+          />
+        </button>
+        <div class="nav-group-body" [class.nav-group-collapsed]="isGroupCollapsed(group.label)">
+          <div>
+            <div class="mt-1 space-y-0.5">
+              @for (item of group.items; track item.label) {
+                @if (item.route) {
+                  <a
+                    class="sidebar-nav-item group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all duration-200 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                    [routerLink]="item.route"
+                    routerLinkActive="bg-sidebar-accent text-sidebar-primary"
+                    [routerLinkActiveOptions]="{ exact: !!item.exacta }"
+                    #rla="routerLinkActive"
+                  >
+                    <app-icon
+                      [name]="item.icon"
+                      class="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+                      [class.text-sidebar-primary]="rla.isActive"
+                    />
+                    <span class="sidebar-label flex-1">{{ item.label }}</span>
+                    @if (item.badge) {
+                      <span class="sidebar-badge flex h-5 min-w-5 items-center justify-center rounded-full bg-sidebar-primary/15 px-1.5 text-[10px] font-semibold text-sidebar-primary">
+                        {{ item.badge }}
+                      </span>
+                    }
+                  </a>
+                } @else {
+                  <!-- Screen not built yet: visible so the map is complete, but not navigable. -->
+                  <span
+                    class="sidebar-nav-item relative flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/60"
+                    aria-disabled="true"
+                    [attr.title]="item.label + ' (próximamente)'"
+                  >
+                    <app-icon [name]="item.icon" class="h-[18px] w-[18px] shrink-0 text-sidebar-foreground/50" />
+                    <span class="sidebar-label flex-1">{{ item.label }}</span>
+                    <span class="sidebar-badge rounded-full border border-sidebar-border px-1.5 text-[10px] font-medium text-sidebar-foreground/70">Pronto</span>
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </nav>
+
+  <div class="border-t border-sidebar-border p-3">
+    <div class="flex items-center gap-2">
+      @if (sesion(); as s) {
+        <a
+          class="flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent/50"
+          routerLink="/cuenta"
+          title="Mi cuenta"
+        >
+          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sidebar-primary/80 to-sidebar-primary text-[11px] font-bold text-sidebar-primary-foreground" aria-hidden="true">
+            {{ iniciales() }}
+          </div>
+          <div class="sidebar-user-info flex min-w-0 flex-1 flex-col">
+            <span class="truncate text-sm font-medium text-sidebar-foreground">{{ s.nombre }}</span>
+            <span class="text-[11px] text-sidebar-foreground/65">{{ s.rol === 'ADMIN' ? 'Administrador' : 'Operativo' }}</span>
+          </div>
+        </a>
+      }
+      <button
+        type="button"
+        class="sidebar-logout rounded-md p-1.5 text-sidebar-foreground/60 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground/90"
+        aria-label="Cerrar sesión"
+        title="Cerrar sesión"
+        (click)="cerrarSesion()"
+      >
+        <app-icon name="lucideLogOut" class="h-4 w-4" />
+      </button>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="sila-collapse-btn absolute -right-3 top-20 hidden h-6 w-6 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md transition-all hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:flex"
+    aria-label="Contraer o expandir menú"
+    (click)="sidebarState.toggleCollapsed()"
+  >
+    <app-icon
+      name="lucideChevronLeft"
+      class="sila-collapse-icon mx-auto h-3.5 w-3.5 transition-transform"
+      [class.rotate-180]="sidebarState.collapsed()"
+    />
+  </button>
+</aside>

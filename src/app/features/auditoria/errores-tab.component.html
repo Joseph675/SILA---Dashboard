@@ -1,0 +1,54 @@
+<div class="mb-2 flex flex-wrap items-end gap-3">
+  <div class="w-full sm:w-56">
+    <label for="errores-usuario" class="mb-1 block text-xs font-medium text-muted-foreground">Usuario</label>
+    <input id="errores-usuario" type="search" class="sila-input" placeholder="Contiene…" maxlength="100" [value]="usuario.crudo()" (input)="usuario.crudo.set($any($event.target).value)" />
+  </div>
+  <div class="w-56">
+    <label for="errores-unidad" class="mb-1 block text-xs font-medium text-muted-foreground">Unidad</label>
+    <input id="errores-unidad" type="search" class="sila-input font-mono" maxlength="100" [value]="unidad.crudo()" (input)="unidad.crudo.set($any($event.target).value)" />
+  </div>
+  <div class="w-32">
+    <label for="errores-codigo" class="mb-1 block text-xs font-medium text-muted-foreground">Código</label>
+    <input id="errores-codigo" type="search" inputmode="numeric" class="sila-input font-mono" maxlength="8" placeholder="p. ej. -1" [value]="codigo.crudo()" (input)="codigo.crudo.set($any($event.target).value)" />
+  </div>
+  <app-filtro-fechas idBase="errores" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
+</div>
+<p class="mb-1 text-xs text-muted-foreground">Las fechas del filtro son días en UTC; las horas de la tabla están en hora de Colombia (UTC−5).</p>
+<p class="mb-4 text-xs text-muted-foreground">
+  La columna <strong>#</strong> es la referencia de soporte: el mismo número que ve quien tuvo un «Error interno. Referencia de soporte: N».
+</p>
+
+<app-server-data-table
+  titulo="Errores"
+  [columns]="columnas"
+  [page]="listado.datos()"
+  [rowId]="errorId"
+  [cargando]="listado.cargando()"
+  [error]="listado.error()"
+  [sort]="listado.sort()"
+  vacioTitulo="No hay errores que coincidan"
+  vacioAyuda="Cambia los filtros o el rango de fechas."
+  (pageChange)="listado.irAPagina($event)"
+  (sizeChange)="listado.cambiarTamano($event)"
+  (sortChange)="listado.sort.set($event)"
+  (reintentar)="listado.recargar()"
+>
+  <ng-template appDataTableCell="id_log" [cellRows]="listado.datos()?.items" let-error>
+    <span class="font-mono text-xs font-semibold">{{ error.id_log }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="fecha" [cellRows]="listado.datos()?.items" let-error>
+    <span class="whitespace-nowrap">{{ fechaHora(error.fecha) }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="usuario" [cellRows]="listado.datos()?.items" let-error>
+    <span class="font-mono text-xs">{{ error.usuario ?? '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="unidad" [cellRows]="listado.datos()?.items" let-error>
+    <span class="font-mono text-xs">{{ error.unidad ?? '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="codigo_error" [cellRows]="listado.datos()?.items" let-error>
+    <span class="font-mono text-xs">{{ error.codigo_error ?? '—' }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="mensaje" [cellRows]="listado.datos()?.items" let-error>
+    <span class="block max-w-96 truncate" [attr.title]="error.mensaje">{{ error.mensaje ?? '—' }}</span>
+  </ng-template>
+</app-server-data-table>

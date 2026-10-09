@@ -1,0 +1,143 @@
+<app-page-header
+  title="Períodos"
+  description="Cada quincena es un candado: al cerrarla se bloquea el registro de ventas, recepciones, gastos y otros movimientos con fecha dentro de ella."
+>
+  <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary shrink-0" (click)="dialogoAnio.set(true)">
+    <app-icon name="lucideCalendarPlus" class="size-4" aria-hidden="true" />
+    Crear períodos de un año
+  </button>
+</app-page-header>
+
+@if (sinAnios()) {
+  <div class="sila-card flex flex-col items-center gap-3 px-4 py-12 text-center">
+    <app-icon name="lucideCalendarRange" class="size-8 text-muted-foreground" aria-hidden="true" />
+    <p class="font-medium">Aún no hay quincenas creadas</p>
+    <p class="max-w-md text-sm text-muted-foreground">
+      Hay que crear los períodos del año para poder registrar ventas, recepciones de leche, gastos y demás movimientos.
+    </p>
+    <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary" (click)="dialogoAnio.set(true)">
+      <app-icon name="lucideCalendarPlus" class="size-4" aria-hidden="true" />
+      Crear períodos de un año
+    </button>
+  </div>
+} @else {
+  <div class="mb-4 flex flex-wrap items-end gap-3">
+    @if (opcionesAnio().length > 0) {
+      <div>
+        <label for="periodos-anio" class="mb-1 block text-xs font-medium text-muted-foreground">Año</label>
+        <select id="periodos-anio" class="sila-select w-32" [value]="anio()" (change)="cambiarAnio($any($event.target).value)">
+          @for (opcion of opcionesAnio(); track opcion) {
+            <option [value]="opcion" [selected]="opcion === anio()">{{ opcion }}</option>
+          }
+        </select>
+      </div>
+    }
+    <label class="flex items-center gap-2 pb-2 text-sm">
+      <input type="checkbox" class="size-4" [checked]="masColumnas()" (change)="masColumnas.set($any($event.target).checked)" />
+      Mostrar leche por pagar y caja
+    </label>
+    <div>
+      <label for="periodos-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
+      <select id="periodos-estado" class="sila-select w-36" [value]="filtroEstado()" (change)="cambiarEstado($any($event.target).value)">
+        <option value="TODOS">Todos</option>
+        <option value="ABIERTA">Abiertas</option>
+        <option value="CERRADA">Cerradas</option>
+      </select>
+    </div>
+  </div>
+
+  <app-server-data-table
+    titulo="Quincenas"
+    [columns]="columnas()"
+    [page]="listado.datos()"
+    [rowId]="periodoId"
+    [cargando]="cargando()"
+    [error]="error()"
+    [sort]="listado.sort()"
+    vacioTitulo="No hay quincenas que coincidan"
+    vacioAyuda="Cambia el año o el filtro de estado."
+    (pageChange)="listado.irAPagina($event)"
+    (sizeChange)="listado.cambiarTamano($event)"
+    (sortChange)="listado.sort.set($event)"
+    (reintentar)="reintentar()"
+  >
+    <ng-template appDataTableCell="fecha_inicio" [cellRows]="listado.datos()?.items" let-periodo>
+      <span class="flex flex-wrap items-center gap-2">
+        <span class="font-medium">{{ quincena(periodo) }}</span>
+        @if (esActual(periodo)) {
+          <app-status-chip texto="Actual" tono="info" />
+        }
+      </span>
+    </ng-template>
+    <ng-template appDataTableCell="fechas" [cellRows]="listado.datos()?.items" let-periodo>
+      <span class="whitespace-nowrap text-muted-foreground">{{ fecha(periodo.fecha_inicio) }} – {{ fecha(periodo.fecha_fin) }}</span>
+    </ng-template>
+    <ng-template appDataTableCell="estado" [cellRows]="listado.datos()?.items" let-periodo>
+      <app-status-chip [texto]="periodo.estado === 'ABIERTA' ? 'Abierta' : 'Cerrada'" [tono]="periodo.estado === 'ABIERTA' ? 'exito' : 'neutro'" />
+    </ng-template>
+    <ng-template appDataTableCell="ingresos_ventas" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.ingresos_ventas) }}</ng-template>
+    <ng-template appDataTableCell="costo_produccion" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.costo_produccion) }}</ng-template>
+    <ng-template appDataTableCell="gastos_operativos" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.gastos_operativos) }}</ng-template>
+    <ng-template appDataTableCell="cartera_castigada" [cellRows]="listado.datos()?.items" let-periodo>{{ cop(periodo.cartera_castigada) }}</ng-template>
+    <ng-template appDataTableCell="resultado_estimado" [cellRows]="listado.datos()?.items" let-periodo>
+      <!-- A negative result is shown with its minus sign and bold text, besides the color. -->
+      <span [class.text-destructive]="periodo.resultado_estimado < 0" [class.font-semibold]="periodo.resultado_estimado < 0">
+        {{ cop(periodo.resultado_estimado) }}
+      </span>
+    </ng-template>
+    <ng-template appDataTableCell="leche_por_pagar" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.leche_por_pagar" /></ng-template>
+    <ng-template appDataTableCell="caja_neta" [cellRows]="listado.datos()?.items" let-periodo><app-monto [valor]="periodo.caja_neta" /></ng-template>
+    <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-periodo>
+      <!-- Hiding is not security: the API answers 403 / 20008 to an OPERATIVO anyway. -->
+      <div *hasRole="'ADMIN'" class="flex justify-end gap-1">
+        <a class="sila-btn sila-btn-ghost sila-btn-sm" [routerLink]="['/periodos', periodo.id_periodo]">
+          <app-icon name="lucideReceipt" class="size-3.5" aria-hidden="true" />
+          Ver cuentas<span class="sr-only"> de {{ quincena(periodo) }} de {{ periodo.anio }}</span>
+        </a>
+        @if (periodo.estado === 'ABIERTA') {
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="cerrando.set(periodo)">
+            <app-icon name="lucideLock" class="size-3.5" aria-hidden="true" />
+            Cerrar<span class="sr-only"> {{ quincena(periodo) }} de {{ periodo.anio }}</span>
+          </button>
+        } @else {
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="reabriendo.set(periodo)">
+            <app-icon name="lucideLockOpen" class="size-3.5" aria-hidden="true" />
+            Reabrir<span class="sr-only"> {{ quincena(periodo) }} de {{ periodo.anio }}</span>
+          </button>
+        }
+      </div>
+    </ng-template>
+  </app-server-data-table>
+
+  <p class="mt-3 text-xs text-muted-foreground">Estimación de gestión, no es un estado contable.</p>
+}
+
+<app-crear-anio-dialog
+  [abierto]="dialogoAnio()"
+  [sugerido]="anioSugerido()"
+  [ocupado]="procesando()"
+  (confirmar)="confirmarCrearAnio($event)"
+  (cerrar)="dialogoAnio.set(false)"
+/>
+
+<app-confirm-dialog
+  [open]="cerrando() !== null"
+  titulo="Cerrar quincena"
+  [mensaje]="mensajeCerrar()"
+  textoConfirmar="Cerrar quincena"
+  [peligro]="true"
+  [ocupado]="procesando()"
+  (confirmar)="confirmarCerrar()"
+  (cancelar)="cerrando.set(null)"
+/>
+
+<app-confirm-dialog
+  [open]="reabriendo() !== null"
+  titulo="Reabrir quincena"
+  [mensaje]="mensajeReabrir()"
+  textoConfirmar="Reabrir quincena"
+  [motivo]="motivoReabrir"
+  [ocupado]="procesando()"
+  (confirmar)="confirmarReabrir($event)"
+  (cancelar)="reabriendo.set(null)"
+/>

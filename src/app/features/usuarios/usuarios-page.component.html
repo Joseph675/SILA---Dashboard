@@ -1,0 +1,162 @@
+<app-page-header title="Usuarios" description="Quién puede entrar a SILA, con qué rol y en qué estado está su cuenta.">
+  <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary shrink-0" (click)="editando.set(null)">
+    <app-icon name="lucideUserPlus" class="size-4" aria-hidden="true" />
+    Nuevo usuario
+  </button>
+</app-page-header>
+
+<div class="mb-4 flex flex-wrap items-end gap-3">
+  <div class="w-full sm:w-72">
+    <label for="usuarios-buscar" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar</label>
+    <div class="relative">
+      <app-icon name="lucideSearch" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+      <input
+        id="usuarios-buscar"
+        type="search"
+        class="sila-input ps-9"
+        placeholder="Usuario, nombre o correo"
+        maxlength="150"
+        [value]="texto()"
+        (input)="texto.set($any($event.target).value)"
+      />
+    </div>
+  </div>
+  <div>
+    <label for="usuarios-rol" class="mb-1 block text-xs font-medium text-muted-foreground">Rol</label>
+    <select id="usuarios-rol" class="sila-select w-40" [value]="filtroRol()" (change)="cambiarFiltroRol($any($event.target).value)">
+      <option value="TODOS">Todos</option>
+      <option value="ADMIN">Administrador</option>
+      <option value="OPERATIVO">Operativo</option>
+    </select>
+  </div>
+  <div>
+    <label for="usuarios-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
+    <select id="usuarios-estado" class="sila-select w-36" [value]="filtroActivo()" (change)="cambiarFiltroActivo($any($event.target).value)">
+      <option value="TODOS">Todos</option>
+      <option value="ACTIVOS">Activos</option>
+      <option value="INACTIVOS">Inactivos</option>
+    </select>
+  </div>
+</div>
+
+<app-server-data-table
+  titulo="Usuarios"
+  [columns]="columnas"
+  [page]="listado.datos()"
+  [rowId]="usuarioId"
+  [cargando]="listado.cargando()"
+  [error]="listado.error()"
+  [sort]="listado.sort()"
+  vacioTitulo="No hay usuarios que coincidan"
+  vacioAyuda="Cambia la búsqueda o los filtros, o crea un usuario nuevo."
+  (pageChange)="listado.irAPagina($event)"
+  (sizeChange)="listado.cambiarTamano($event)"
+  (sortChange)="listado.sort.set($event)"
+  (reintentar)="listado.recargar()"
+>
+  <ng-template appDataTableCell="usuario" [cellRows]="listado.datos()?.items" let-usuario>
+    <span class="font-mono text-xs">{{ usuario.usuario }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-usuario>
+    <span class="font-medium">{{ usuario.nombre }}</span>
+    @if (esYo(usuario)) {
+      <span class="ms-1 text-xs text-muted-foreground">(tú)</span>
+    }
+  </ng-template>
+  <ng-template appDataTableCell="email" [cellRows]="listado.datos()?.items" let-usuario>
+    <span class="text-muted-foreground">{{ usuario.email }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="rol" [cellRows]="listado.datos()?.items" let-usuario>
+    <app-status-chip [texto]="usuario.rol === 'ADMIN' ? 'Administrador' : 'Operativo'" tono="info" />
+  </ng-template>
+  <ng-template appDataTableCell="activo" [cellRows]="listado.datos()?.items" let-usuario>
+    <span class="flex flex-wrap gap-1">
+      <app-status-chip [texto]="usuario.activo ? 'Activo' : 'Inactivo'" [tono]="usuario.activo ? 'exito' : 'neutro'" />
+      @if (usuario.bloqueado) {
+        <app-status-chip [texto]="'Bloqueado (' + usuario.bloqueado_minutos + ' min)'" tono="peligro" />
+      }
+    </span>
+  </ng-template>
+  <ng-template appDataTableCell="ultimo_login" [cellRows]="listado.datos()?.items" let-usuario>
+    <span class="whitespace-nowrap text-muted-foreground">{{ fechaHora(usuario.ultimo_login) }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-usuario>
+    <!-- Hiding or disabling is not security: the API answers 403 / 409 to what it does not allow. -->
+    <!-- Icon-only buttons keep the column narrow; the text for screen readers and the tooltip say what each one does. -->
+    <div *hasRole="'ADMIN'" class="flex justify-end gap-0.5">
+      <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Editar" (click)="editando.set(usuario)">
+        <app-icon name="lucidePencil" class="size-4" aria-hidden="true" />
+        <span class="sr-only">Editar a {{ usuario.nombre }}</span>
+      </button>
+      <button
+        type="button"
+        class="sila-btn sila-btn-ghost size-8 px-0"
+        [disabled]="esYo(usuario)"
+        [attr.title]="esYo(usuario) ? motivoPropiaCuenta : usuario.activo ? 'Desactivar' : 'Activar'"
+        (click)="accion.set({ tipo: 'estado', usuario })"
+      >
+        <app-icon name="lucidePower" class="size-4" aria-hidden="true" />
+        <span class="sr-only">{{ usuario.activo ? 'Desactivar' : 'Activar' }} a {{ usuario.nombre }}</span>
+      </button>
+      @if (usuario.bloqueado) {
+        <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Desbloquear" (click)="accion.set({ tipo: 'desbloquear', usuario })">
+          <app-icon name="lucideLockOpen" class="size-4" aria-hidden="true" />
+          <span class="sr-only">Desbloquear a {{ usuario.nombre }}</span>
+        </button>
+      }
+      <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Ver sesiones" (click)="verSesionesDe.set(usuario)">
+        <app-icon name="lucideMonitor" class="size-4" aria-hidden="true" />
+        <span class="sr-only">Ver sesiones de {{ usuario.nombre }}</span>
+      </button>
+      <button type="button" class="sila-btn sila-btn-ghost size-8 px-0" title="Cerrar sus sesiones" (click)="accion.set({ tipo: 'sesiones', usuario })">
+        <app-icon name="lucideLogOut" class="size-4" aria-hidden="true" />
+        <span class="sr-only">Cerrar las sesiones de {{ usuario.nombre }}</span>
+      </button>
+      <button
+        type="button"
+        class="sila-btn sila-btn-ghost size-8 px-0"
+        [disabled]="esYo(usuario)"
+        [attr.title]="esYo(usuario) ? motivoPropiaCuenta : 'Restablecer clave'"
+        (click)="accion.set({ tipo: 'clave', usuario })"
+      >
+        <app-icon name="lucideKeyRound" class="size-4" aria-hidden="true" />
+        <span class="sr-only">Restablecer clave de {{ usuario.nombre }}</span>
+      </button>
+      @if (usuario.mfa_activo) {
+        <button
+          type="button"
+          class="sila-btn sila-btn-ghost size-8 px-0"
+          [disabled]="esYo(usuario)"
+          [attr.title]="esYo(usuario) ? motivoPropiaCuenta : 'Restablecer segundo factor'"
+          (click)="accion.set({ tipo: 'mfa', usuario })"
+        >
+          <app-icon name="lucideShieldOff" class="size-4" aria-hidden="true" />
+          <span class="sr-only">Restablecer segundo factor de {{ usuario.nombre }}</span>
+        </button>
+      }
+    </div>
+  </ng-template>
+</app-server-data-table>
+
+<app-usuario-form-dialog
+  [abierto]="editando() !== undefined"
+  [usuario]="editando() ?? null"
+  [soyYo]="editando() ? esYo(editando()!) : false"
+  (guardado)="alGuardar($event)"
+  (cerrar)="editando.set(undefined)"
+/>
+
+<app-confirm-dialog
+  [open]="accion() !== null"
+  [titulo]="dialogoAccion().titulo"
+  [mensaje]="dialogoAccion().mensaje"
+  [textoConfirmar]="dialogoAccion().texto"
+  [peligro]="dialogoAccion().peligro"
+  [ocupado]="procesando()"
+  (confirmar)="confirmarAccion()"
+  (cancelar)="accion.set(null)"
+/>
+
+<app-usuario-sesiones-dialog [usuario]="verSesionesDe()" (cerrar)="verSesionesDe.set(null)" />
+
+<app-clave-temporal-dialog [datos]="claveTemporal()" (confirmado)="claveTemporal.set(null)" />

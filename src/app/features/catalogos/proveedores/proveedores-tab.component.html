@@ -1,0 +1,101 @@
+<div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+  <div class="flex flex-1 flex-wrap items-end gap-3">
+    <div class="w-full sm:w-72">
+      <label for="proveedores-buscar" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar</label>
+      <div class="relative">
+        <app-icon name="lucideSearch" class="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <input
+          id="proveedores-buscar"
+          type="search"
+          class="sila-input ps-9"
+          placeholder="Nombre o documento"
+          maxlength="120"
+          [value]="texto()"
+          (input)="texto.set($any($event.target).value)"
+        />
+      </div>
+    </div>
+    <div>
+      <label for="proveedores-tipo" class="mb-1 block text-xs font-medium text-muted-foreground">Tipo</label>
+      <select id="proveedores-tipo" class="sila-select w-36" [value]="filtroTipo()" (change)="cambiarFiltroTipo($any($event.target).value)">
+        <option value="TODOS">Todos</option>
+        <option value="LECHERO">Lechero</option>
+        <option value="INSUMOS">Insumos</option>
+      </select>
+    </div>
+    <div>
+      <label for="proveedores-estado" class="mb-1 block text-xs font-medium text-muted-foreground">Estado</label>
+      <select id="proveedores-estado" class="sila-select w-36" [value]="filtroActivo()" (change)="cambiarFiltroActivo($any($event.target).value)">
+        <option value="TODOS">Todos</option>
+        <option value="ACTIVOS">Activos</option>
+        <option value="INACTIVOS">Inactivos</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="sila-btn sila-btn-primary" (click)="editando.set(null)">
+    <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
+    Nuevo proveedor
+  </button>
+</div>
+
+<app-server-data-table
+  titulo="Proveedores"
+  [columns]="columnas"
+  [page]="listado.datos()"
+  [rowId]="proveedorId"
+  [cargando]="listado.cargando()"
+  [error]="listado.error()"
+  [sort]="listado.sort()"
+  vacioTitulo="No hay proveedores que coincidan"
+  vacioAyuda="Cambia la búsqueda o los filtros, o registra un proveedor nuevo."
+  (pageChange)="listado.irAPagina($event)"
+  (sizeChange)="listado.cambiarTamano($event)"
+  (sortChange)="listado.sort.set($event)"
+  (reintentar)="listado.recargar()"
+>
+  <button accionVacio type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="editando.set(null)">Nuevo proveedor</button>
+
+  <ng-template appDataTableCell="numero_documento" [cellRows]="listado.datos()?.items" let-proveedor>
+    <span class="whitespace-nowrap font-mono text-xs">{{ proveedor.tipo_documento }} {{ proveedor.numero_documento }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="nombre" [cellRows]="listado.datos()?.items" let-proveedor>
+    <span class="font-medium">{{ proveedor.nombre }}</span>
+  </ng-template>
+  <ng-template appDataTableCell="tipo_proveedor" [cellRows]="listado.datos()?.items" let-proveedor>
+    <app-status-chip [texto]="proveedor.tipo_proveedor === 'LECHERO' ? 'Lechero' : 'Insumos'" tono="info" />
+  </ng-template>
+  <ng-template appDataTableCell="activo" [cellRows]="listado.datos()?.items" let-proveedor>
+    <app-status-chip [texto]="proveedor.activo ? 'Activo' : 'Inactivo'" [tono]="proveedor.activo ? 'exito' : 'neutro'" />
+  </ng-template>
+  <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-proveedor>
+    <div class="flex justify-end gap-1">
+      <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="editando.set(proveedor)">
+        <app-icon name="lucidePencil" class="size-3.5" aria-hidden="true" />
+        Editar<span class="sr-only"> {{ proveedor.nombre }}</span>
+      </button>
+      <!-- SUPUESTO: activar/desactivar proveedores es solo ADMIN, igual que en clientes. -->
+      <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="cambiandoEstado.set(proveedor)">
+        <app-icon name="lucidePower" class="size-3.5" aria-hidden="true" />
+        {{ proveedor.activo ? 'Desactivar' : 'Activar' }}<span class="sr-only"> {{ proveedor.nombre }}</span>
+      </button>
+    </div>
+  </ng-template>
+</app-server-data-table>
+
+<app-proveedor-form-dialog
+  [abierto]="editando() !== undefined"
+  [proveedor]="editando() ?? null"
+  (guardado)="alGuardar($event)"
+  (cerrar)="editando.set(undefined)"
+/>
+
+<app-confirm-dialog
+  [open]="cambiandoEstado() !== null"
+  [titulo]="cambiandoEstado()?.activo ? 'Desactivar proveedor' : 'Activar proveedor'"
+  [mensaje]="(cambiandoEstado()?.activo ? '¿Desactivar a ' : '¿Activar a ') + cambiandoEstado()?.nombre + '?'"
+  [textoConfirmar]="cambiandoEstado()?.activo ? 'Desactivar' : 'Activar'"
+  [peligro]="cambiandoEstado()?.activo ?? false"
+  [ocupado]="procesandoEstado()"
+  (confirmar)="confirmarEstado()"
+  (cancelar)="cambiandoEstado.set(null)"
+/>

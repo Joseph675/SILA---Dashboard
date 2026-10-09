@@ -1,0 +1,50 @@
+<app-dialog [open]="abierto()" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
+  <form id="cliente-form" class="grid grid-cols-1 gap-4 sm:grid-cols-2" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <app-form-field etiqueta="Tipo de documento" [obligatorio]="true">
+      <select class="sila-select" formControlName="tipo_documento">
+        @for (tipo of tiposDocumento; track tipo) {
+          <option [value]="tipo">{{ tipo }}</option>
+        }
+      </select>
+    </app-form-field>
+
+    <app-form-field etiqueta="Número de documento" [ayuda]="cliente() ? 'El documento no se puede cambiar.' : '5 a 20 caracteres: letras, números o guion.'" [obligatorio]="true">
+      <input class="sila-input" formControlName="numero_documento" maxlength="20" autocomplete="off" />
+    </app-form-field>
+
+    <app-form-field class="sm:col-span-2" etiqueta="Nombre" ayuda="Máximo 120 caracteres." [obligatorio]="true">
+      <input class="sila-input" formControlName="nombre" maxlength="120" autocomplete="off" />
+    </app-form-field>
+
+    <app-form-field etiqueta="Correo electrónico" [obligatorio]="true">
+      <input class="sila-input" type="email" formControlName="email" maxlength="120" autocomplete="off" />
+    </app-form-field>
+
+    <app-form-field etiqueta="Teléfono">
+      <input class="sila-input" type="tel" formControlName="telefono" maxlength="20" autocomplete="off" />
+    </app-form-field>
+
+    <app-form-field class="sm:col-span-2" etiqueta="Dirección">
+      <input class="sila-input" formControlName="direccion" maxlength="200" autocomplete="off" />
+    </app-form-field>
+
+    <app-form-field
+      etiqueta="Límite de crédito (COP)"
+      [ayuda]="esAdmin() ? 'Mayor o igual a 0, máximo 2 decimales.' : 'Solo un administrador puede fijar o cambiar el límite.'"
+      [obligatorio]="esAdmin()"
+    >
+      <input class="sila-input" type="number" inputmode="decimal" min="0" step="0.01" formControlName="limite_credito" />
+    </app-form-field>
+  </form>
+
+  @if (errorGeneral(); as mensaje) {
+    <p class="mt-4 rounded-md bg-destructive/15 px-3 py-2 text-sm" role="alert">{{ mensaje }}</p>
+  }
+
+  <div dialogFooter class="flex gap-2">
+    <button type="button" class="sila-btn sila-btn-outline" [disabled]="guardando()" (click)="cerrar.emit()">Cancelar</button>
+    <button type="submit" form="cliente-form" class="sila-btn sila-btn-primary" [disabled]="guardando()" [attr.aria-busy]="guardando()">
+      {{ guardando() ? 'Guardando…' : 'Guardar' }}
+    </button>
+  </div>
+</app-dialog>
