@@ -146,12 +146,13 @@ interface Fila {
           </article>
           <article class="sila-card border-l-4 border-l-chart-2 p-5" aria-labelledby="caja-titulo" data-testid="tarjeta-caja">
             <h3 id="caja-titulo" class="text-sm font-semibold">Caja (plata que entró y salió)
-              <app-ayuda texto="Lo que realmente se cobró menos lo que realmente se pagó a lecheros y en gastos durante la quincena." /></h3>
+              <app-ayuda texto="Lo que realmente se cobró menos lo que realmente se pagó durante la quincena: a lecheros, en compras de insumos y en gastos." /></h3>
             <p class="my-2 text-3xl font-bold" data-testid="valor-caja"><app-monto [valor]="p.caja_neta" [destacado]="true" /></p>
-            <p class="text-xs text-muted-foreground">Cobrado − Pagos a lecheros − Gastos</p>
+            <p class="text-xs text-muted-foreground">Cobrado − Pagos a lecheros − Compras de insumos − Gastos</p>
             <dl class="mt-3 space-y-1 text-sm">
               <div class="flex justify-between"><dt>Cobrado</dt><dd><app-monto [valor]="p.total_cobrado" /></dd></div>
               <div class="flex justify-between"><dt>− Pagos a lecheros <app-ayuda texto="Pagos hechos durante la quincena, de la leche de cualquier quincena." /></dt><dd><app-monto [valor]="p.pagos_proveedores_caja" /></dd></div>
+              <div class="flex justify-between"><dt>− Compras de insumos <app-ayuda texto="Compras vigentes de azúcar, envases y demás insumos hechas en la quincena. Se asume que se pagan al comprar." /></dt><dd><app-monto [valor]="p.compras_insumos" /></dd></div>
               <div class="flex justify-between"><dt>− Gastos</dt><dd><app-monto [valor]="p.gastos_operativos" /></dd></div>
             </dl>
           </article>

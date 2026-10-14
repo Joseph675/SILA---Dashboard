@@ -1,4 +1,4 @@
-<div class="mb-2 flex flex-wrap items-end gap-3">
+<app-filtros-plegables clases="mb-2 flex flex-wrap items-end gap-3">
   <div class="w-full sm:w-56">
     <label for="errores-usuario" class="mb-1 block text-xs font-medium text-muted-foreground">Usuario</label>
     <input id="errores-usuario" type="search" class="sila-input" placeholder="Contiene…" maxlength="100" [value]="usuario.crudo()" (input)="usuario.crudo.set($any($event.target).value)" />
@@ -12,7 +12,7 @@
     <input id="errores-codigo" type="search" inputmode="numeric" class="sila-input font-mono" maxlength="8" placeholder="p. ej. -1" [value]="codigo.crudo()" (input)="codigo.crudo.set($any($event.target).value)" />
   </div>
   <app-filtro-fechas idBase="errores" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
-</div>
+</app-filtros-plegables>
 <p class="mb-1 text-xs text-muted-foreground">Las fechas del filtro son días en UTC; las horas de la tabla están en hora de Colombia (UTC−5).</p>
 <p class="mb-4 text-xs text-muted-foreground">
   La columna <strong>#</strong> es la referencia de soporte: el mismo número que ve quien tuvo un «Error interno. Referencia de soporte: N».

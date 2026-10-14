@@ -18,7 +18,7 @@ import type { ClienteCartera } from './models/cartera.models';
         @if (pendientes.value().length === 0) {
           <p class="py-4 text-center text-sm text-muted-foreground">Este cliente no tiene ventas pendientes.</p>
         } @else {
-          <div class="overflow-x-auto">
+          <div class="relative overflow-x-auto">
             <table class="w-full text-left text-sm">
               <caption class="sr-only">Ventas pendientes, de la más antigua a la más nueva</caption>
               <thead class="text-xs text-muted-foreground">

@@ -8,7 +8,7 @@ import { ToastService } from './toast.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   template: `
-    <div class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:end-4" aria-live="polite" role="status">
+    <div class="pointer-events-none fixed inset-x-3 top-[4.5rem] z-50 flex flex-col items-end gap-2 sm:inset-x-auto sm:end-4 sm:bottom-4 sm:top-auto" aria-live="polite" role="status">
       @for (toast of toastService.toasts(); track toast.id) {
         <div class="sila-card pointer-events-auto flex w-full max-w-sm items-start gap-3 p-3 text-sm">
           <app-icon

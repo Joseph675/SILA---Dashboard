@@ -102,6 +102,37 @@ export interface ProductoCrear {
   unidad_medida: UnidadMedida;
   precio_base: number;
   tarifa_iva: number;
+  /** Supplies one unit uses. Two steps in the database: if the recipe fails the product EXISTS already (see `RecetaFallida`). */
+  receta?: LineaRecetaGuardar[];
+}
+
+/** One line of a recipe to save: how much of an insumo ONE unit of the product uses, in the insumo's unit. */
+export interface LineaRecetaGuardar {
+  id_insumo: number;
+  cantidad: number;
+}
+
+export interface LineaReceta {
+  id_insumo: number;
+  codigo_insumo: string;
+  insumo: string;
+  unidad_insumo: string;
+  cantidad_por_unidad: number;
+  costo_unitario_insumo: number;
+  valor_por_unidad: number;
+  stock_insumo: number;
+  insumo_activo: boolean;
+}
+
+export interface Receta {
+  id_producto: number;
+  codigo_sku: string;
+  producto: string;
+  lineas: LineaReceta[];
+  /** What the supplies of ONE unit cost, at today's average cost. */
+  costo_insumos_unitario: number;
+  /** How many units the current insumo stock can make (`null` without a recipe). */
+  unidades_posibles: number | null;
 }
 
 // SUPUESTO: OPERATIVO puede editar nombre y unidad de medida; precio_base y tarifa_iva solo ADMIN (cambiar precio).

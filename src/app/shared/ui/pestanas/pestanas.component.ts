@@ -16,19 +16,19 @@ export interface Pestana {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [IconComponent],
   template: `
-    <div role="tablist" [attr.aria-label]="etiqueta()" class="mb-6 inline-flex max-w-full gap-1 overflow-x-auto rounded-lg bg-muted p-1">
+    <div role="tablist" [attr.aria-label]="etiqueta()" class="mb-6 flex w-full snap-x gap-1 overflow-x-auto overscroll-x-contain rounded-lg bg-muted p-1 sm:inline-flex sm:w-auto sm:max-w-full">
       @for (pestana of pestanas(); track pestana.id; let i = $index) {
         <button
           #tab
           type="button"
           role="tab"
-          class="sila-tab focus-visible:outline-2 focus-visible:outline-ring"
+          class="sila-tab shrink-0 snap-start focus-visible:outline-2 focus-visible:outline-ring"
           [class.sila-tab-active]="activa() === pestana.id"
           [id]="'tab-' + pestana.id"
           [attr.aria-selected]="activa() === pestana.id"
           [attr.aria-controls]="'panel-' + pestana.id"
           [tabIndex]="activa() === pestana.id ? 0 : -1"
-          (click)="seleccionada.emit(pestana.id)"
+          (click)="elegir(pestana.id, $event)"
           (keydown)="navegar($event, i)"
         >
           <app-icon [name]="pestana.icono" class="size-4" aria-hidden="true" />
@@ -45,6 +45,12 @@ export class PestanasComponent {
   readonly seleccionada = output<string>();
 
   private readonly tabs = viewChildren<ElementRef<HTMLButtonElement>>('tab');
+
+  /** Chooses a tab and brings it into view (on a phone the row scrolls sideways). */
+  protected elegir(id: string, evento: Event): void {
+    this.seleccionada.emit(id);
+    (evento.currentTarget as HTMLElement | null)?.scrollIntoView?.({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+  }
 
   protected navegar(evento: KeyboardEvent, indice: number): void {
     const total = this.pestanas().length;

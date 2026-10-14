@@ -53,6 +53,18 @@ export const routes: Routes = [
         loadChildren: () => import('./features/produccion/produccion.routes').then((m) => m.PRODUCCION_ROUTES),
       },
       {
+        path: 'gastos',
+        loadChildren: () => import('./features/gastos/gastos.routes').then((m) => m.GASTOS_ROUTES),
+      },
+      {
+        path: 'documentos',
+        loadChildren: () => import('./features/documentos/documentos.routes').then((m) => m.DOCUMENTOS_ROUTES),
+      },
+      {
+        path: 'insumos',
+        loadChildren: () => import('./features/insumos/insumos.routes').then((m) => m.INSUMOS_ROUTES),
+      },
+      {
         path: 'inventario',
         loadChildren: () => import('./features/inventario/inventario.routes').then((m) => m.INVENTARIO_ROUTES),
       },

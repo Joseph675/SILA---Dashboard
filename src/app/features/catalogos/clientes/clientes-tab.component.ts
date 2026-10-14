@@ -55,7 +55,7 @@ export class ClientesTabComponent {
 
   protected readonly columnas: DataTableColumn<Cliente>[] = [
     { key: 'numero_documento', label: 'Documento', value: (c) => c.numero_documento },
-    { key: 'nombre', label: 'Nombre', value: (c) => c.nombre },
+    { key: 'nombre', label: 'Nombre', rol: 'titulo', value: (c) => c.nombre },
     { key: 'email', label: 'Correo', value: (c) => c.email },
     { key: 'telefono', label: 'Teléfono', sortable: false, value: (c) => c.telefono },
     { key: 'direccion', label: 'Dirección', sortable: false, value: (c) => c.direccion },

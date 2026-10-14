@@ -59,7 +59,7 @@ export class ProveedoresTabComponent {
 
   protected readonly columnas: DataTableColumn<Proveedor>[] = [
     { key: 'numero_documento', label: 'Documento', value: (p) => p.numero_documento },
-    { key: 'nombre', label: 'Nombre', value: (p) => p.nombre },
+    { key: 'nombre', label: 'Nombre', rol: 'titulo', value: (p) => p.nombre },
     { key: 'telefono', label: 'Teléfono', sortable: false, value: (p) => p.telefono },
     { key: 'tipo_proveedor', label: 'Tipo', value: (p) => p.tipo_proveedor },
     { key: 'activo', label: 'Estado', value: (p) => (p.activo ? 1 : 0) },

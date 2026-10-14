@@ -8,14 +8,14 @@ import { PERIODOS_REPOSITORY } from './data/periodos.provider';
 import type { Periodo } from './models/periodos.models';
 import { CuentasQuincenaPageComponent } from './cuentas-quincena-page.component';
 
-/** Una quincena que GANÓ plata (resultado $ 500.000) pero donde SALIÓ más de la que entró (caja −$ 120.000). */
+/** Una quincena que GANÓ plata (resultado $ 500.000) pero donde SALIÓ más de la que entró (caja −$ 220.000: 500.000 − 470.000 − 100.000 − 150.000). */
 const PERIODO: Periodo = {
   id_periodo: 19, anio: 2026, mes: 10, quincena: 1, fecha_inicio: '2026-10-01', fecha_fin: '2026-10-15', estado: 'ABIERTA',
   ingresos_ventas: 1000000, costo_produccion: 300000, gastos_operativos: 150000, cartera_castigada: 50000, resultado_estimado: 500000,
   iva_ventas: 190000, total_vendido: 1190000, ventas_contado: 400000, ventas_credito: 790000,
   cobrado_contado: 400000, cobrado_abonos: 100000, total_cobrado: 500000, cartera_pendiente: 790000,
   leche_litros: 1500, leche_litros_rechazados: 40, leche_comprada: 2700000, leche_pagada: 1000000, leche_por_pagar: 1700000,
-  pagos_proveedores_caja: 470000, caja_neta: -120000,
+  pagos_proveedores_caja: 470000, compras_insumos: 100000, caja_neta: -220000,
 };
 
 describe('CuentasQuincenaPageComponent', () => {
@@ -59,11 +59,13 @@ describe('CuentasQuincenaPageComponent', () => {
     expect(raiz.querySelector('section[aria-labelledby=bloque-resultado]')).toBeTruthy();
 
     expect(texto(f, '[data-testid=valor-resultado]')).toContain('500.000');
-    expect(texto(f, '[data-testid=valor-caja]')).toContain('120.000');
+    expect(texto(f, '[data-testid=valor-caja]')).toContain('220.000');
     expect(texto(f, '[data-testid=valor-caja]')).toContain('-');
     expect(texto(f, '[data-testid=valor-resultado]')).not.toBe(texto(f, '[data-testid=valor-caja]'));
     expect(texto(f, '[data-testid=tarjeta-resultado]')).toContain('Ventas sin IVA − Costo de producción − Gastos − Cartera castigada');
-    expect(texto(f, '[data-testid=tarjeta-caja]')).toContain('Cobrado − Pagos a lecheros − Gastos');
+    expect(texto(f, '[data-testid=tarjeta-caja]')).toContain('Cobrado − Pagos a lecheros − Compras de insumos − Gastos');
+    expect(texto(f, '[data-testid=tarjeta-caja]')).toContain('Compras de insumos');
+    expect(texto(f, '[data-testid=tarjeta-caja]')).toContain('100.000');
     expect(texto(f, '[data-testid=nota-resultado]')).toContain('El costo de la leche entra en el resultado cuando se produce');
     // La caja negativa va en rojo (y con su signo).
     expect(raiz.querySelector('[data-testid=valor-caja] .text-destructive')).toBeTruthy();

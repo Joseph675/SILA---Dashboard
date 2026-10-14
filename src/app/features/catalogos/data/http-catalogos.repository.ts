@@ -10,6 +10,8 @@ import type {
   ProductoActualizar,
   ProductoCambiarPrecio,
   ProductoCrear,
+  LineaRecetaGuardar,
+  Receta,
   ProductosQuery,
   Proveedor,
   ProveedorGuardar,
@@ -63,6 +65,12 @@ export class HttpCatalogosRepository extends CatalogosRepository {
 
   listarProductos(query: ProductosQuery): Observable<Page<Producto>> {
     return this.api.get<Page<Producto>>(`${BASE}/productos`, { ...query });
+  }
+  obtenerReceta(idProducto: number): Observable<Receta> {
+    return this.api.get<Receta>(`${BASE}/productos/${idProducto}/receta`);
+  }
+  guardarReceta(idProducto: number, lineas: LineaRecetaGuardar[]): Observable<Receta> {
+    return this.api.put<Receta>(`${BASE}/productos/${idProducto}/receta`, { lineas });
   }
   crearProducto(datos: ProductoCrear): Observable<Producto> {
     return this.api.post<Producto>(`${BASE}/productos`, datos);

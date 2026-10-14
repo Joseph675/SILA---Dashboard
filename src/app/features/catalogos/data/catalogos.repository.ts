@@ -8,6 +8,8 @@ import type {
   ProductoActualizar,
   ProductoCambiarPrecio,
   ProductoCrear,
+  LineaRecetaGuardar,
+  Receta,
   ProductosQuery,
   Proveedor,
   ProveedorGuardar,
@@ -36,6 +38,10 @@ export abstract class CatalogosRepository {
   abstract cambiarEstadoProveedor(id: number, activo: boolean): Observable<Proveedor>;
 
   abstract listarProductos(query: ProductosQuery): Observable<Page<Producto>>;
+  /** The supplies one unit of the product uses (empty `lineas` when it has no recipe). */
+  abstract obtenerReceta(idProducto: number): Observable<Receta>;
+  /** [ADMIN] Replaces the WHOLE recipe; `[]` empties it. Duplicates → 400, unknown insumo → 404. */
+  abstract guardarReceta(idProducto: number, lineas: LineaRecetaGuardar[]): Observable<Receta>;
   /** [ADMIN] */
   abstract crearProducto(datos: ProductoCrear): Observable<Producto>;
   abstract actualizarProducto(id: number, datos: ProductoActualizar): Observable<Producto>;

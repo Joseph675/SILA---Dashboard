@@ -17,7 +17,7 @@
     </div>
   </section>
 } @else {
-  <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
+  <div class="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_28rem] lg:pb-0">
     <!-- Zone 1: products -->
     <section aria-labelledby="pv-productos">
       <h2 id="pv-productos" class="sr-only">Productos</h2>
@@ -285,4 +285,23 @@
       </div>
     </section>
   </div>
+
+  <!-- Phones: the total and the main action stay in view while the ticket is long. -->
+  @if (lineas().length > 0) {
+    <div
+      class="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-3 border-t border-border bg-background/95 px-4 pt-3 backdrop-blur lg:hidden"
+      style="padding-bottom: calc(0.75rem + env(safe-area-inset-bottom))"
+      data-testid="barra-total"
+    >
+      <div class="min-w-0">
+        <p class="text-xs text-muted-foreground">{{ lineas().length }} {{ lineas().length === 1 ? 'producto' : 'productos' }} · Total</p>
+        <p class="truncate text-xl font-bold tabular-nums">{{ cop(totales().total) }}</p>
+      </div>
+      @if (bloqueo() === null && !enviando()) {
+        <button type="button" class="sila-btn sila-btn-primary px-6" (click)="cobrar()">{{ tipo() === 'CONTADO' ? 'Cobrar' : 'Registrar crédito' }}</button>
+      } @else {
+        <button type="button" class="sila-btn sila-btn-primary px-6" [disabled]="enviando()" (click)="irAlTicket()">{{ enviando() ? 'Procesando…' : 'Ver ticket' }}</button>
+      }
+    </div>
+  }
 }

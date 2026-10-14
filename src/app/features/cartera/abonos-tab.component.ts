@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { ClienteSelectorComponent } from '../../shared/ui/cliente-selector/cliente-selector.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
@@ -14,15 +15,15 @@ import type { MetodoPago } from '../ventas/models/ventas.models';
 @Component({
   selector: 'app-abonos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClienteSelectorComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
+  imports: [FiltrosPlegablesComponent, ClienteSelectorComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
   template: `
-    <div class="mb-2 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-2 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-72">
         <span class="mb-1 block text-xs font-medium text-muted-foreground" id="abonos-cliente-etiqueta">Cliente</span>
         @if (idClienteFijo() !== null) {
           <p class="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm" data-testid="cliente-fijo">
             <span class="truncate">{{ nombreClienteFijo() }}</span>
-            <button type="button" class="ms-auto underline" (click)="quitarCliente.emit()">Quitar</button>
+            <button type="button" data-accion class="ms-auto underline" (click)="quitarCliente.emit()">Quitar</button>
           </p>
         } @else {
           <app-cliente-selector idCampo="abonos-cliente" (clienteElegido)="cliente.set($event?.id_cliente ?? null)" />
@@ -42,7 +43,7 @@ import type { MetodoPago } from '../ventas/models/ventas.models';
         <input id="abonos-recibo" type="number" min="1" step="1" class="sila-input w-32" [value]="recibo()" (input)="recibo.set($any($event.target).value)" />
       </div>
       <app-filtro-fechas idBase="abonos" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
-    </div>
+    </app-filtros-plegables>
     <p class="mb-3 text-xs text-muted-foreground">Un pago se reparte entre varias ventas: cada reparto es una fila y todas comparten el número de recibo. Las fechas del filtro son días.</p>
 
     <app-server-data-table

@@ -44,7 +44,9 @@ export interface Periodo {
   leche_por_pagar: number;
   /** Payments to lecheros made DURING the quincena (of any milk quincena). */
   pagos_proveedores_caja: number;
-  /** total_cobrado − pagos_proveedores_caja − gastos_operativos. */
+  /** Valid purchases of insumos made in the quincena (assumed paid when bought). */
+  compras_insumos: number;
+  /** total_cobrado − pagos_proveedores_caja − compras_insumos − gastos_operativos. */
   caja_neta: number;
 }
 

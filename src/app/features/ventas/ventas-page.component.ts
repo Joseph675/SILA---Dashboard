@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
@@ -18,7 +19,7 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
 @Component({
   selector: 'app-ventas-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent],
   template: `
     <app-page-header title="Historial de ventas" description="Consulta las ventas registradas, su detalle y, si eres administrador, anúlalas.">
       <a routerLink="/ventas/nueva" class="sila-btn sila-btn-primary shrink-0">
@@ -27,7 +28,7 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
       </a>
     </app-page-header>
 
-    <div class="mb-4 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="ventas-texto" class="mb-1 block text-xs font-medium text-muted-foreground">Cliente o documento</label>
         <input id="ventas-texto" type="search" class="sila-input" placeholder="Buscar…" maxlength="100" [value]="texto.crudo()" (input)="texto.crudo.set($any($event.target).value)" />
@@ -51,7 +52,7 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
       </div>
       <app-filtro-fechas idBase="ventas" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
       <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
-    </div>
+    </app-filtros-plegables>
 
     <app-server-data-table
       titulo="Ventas"

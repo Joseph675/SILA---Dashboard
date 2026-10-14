@@ -19,7 +19,66 @@
       <ng-content select="[accionVacio]" />
     </div>
   } @else {
-    <div class="overflow-x-auto">
+    @if (movil()) {
+      @if (colOrdenables().length > 0 && sort() !== null) {
+        <div class="flex items-end gap-2 border-b border-border p-3">
+          <label class="min-w-0 flex-1 text-xs text-muted-foreground">
+            Ordenar por
+            <select class="sila-select mt-1" [value]="campoOrden()" (change)="ordenarPor($any($event.target).value)">
+              @for (c of colOrdenables(); track c.key) {
+                <option [value]="c.key" [selected]="c.key === campoOrden()">{{ c.label }}</option>
+              }
+            </select>
+          </label>
+          <button type="button" class="sila-btn sila-btn-outline min-w-11 px-3" (click)="invertirOrden()" [attr.aria-label]="'Orden ' + (direccionOrden() === 'asc' ? 'ascendente' : 'descendente') + ': cambiar'">
+            <app-icon [name]="direccionOrden() === 'asc' ? 'lucideChevronUp' : 'lucideChevronDown'" class="size-4" aria-hidden="true" />
+          </button>
+        </div>
+      }
+      <ul class="divide-y divide-border" [attr.aria-busy]="cargando()" [class.opacity-60]="cargando()" [attr.aria-label]="titulo()">
+        @if (primeraCarga()) {
+          @for (fila of filasSkeleton; track fila) {
+            <li class="space-y-2 p-4"><div class="h-4 w-2/3 animate-pulse rounded bg-muted"></div><div class="h-4 w-1/2 animate-pulse rounded bg-muted"></div></li>
+          }
+        } @else {
+          @for (row of filas(); track rowId()(row); let index = $index) {
+            <li class="min-w-0 space-y-2 p-4" data-tarjeta>
+              @if (colTitulo(); as titulo) {
+                <div class="break-words font-medium">
+                  @if (templateFor(titulo); as plantilla) {
+                    <ng-container *ngTemplateOutlet="plantilla; context: { $implicit: row, index: index }" />
+                  } @else {
+                    {{ titulo.value(row) }}
+                  }
+                </div>
+              }
+              @if (colDetalle().length > 0) {
+                <dl class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] items-baseline gap-x-4 gap-y-1.5 text-sm">
+                  @for (column of colDetalle(); track column.key) {
+                    <dt class="text-muted-foreground">{{ column.label }}</dt>
+                    <dd class="min-w-0 break-words text-end">
+                      @if (templateFor(column); as cellTemplate) {
+                        <ng-container *ngTemplateOutlet="cellTemplate; context: { $implicit: row, index: index }" />
+                      } @else {
+                        {{ column.value(row) }}
+                      }
+                    </dd>
+                  }
+                </dl>
+              }
+              @if (colAcciones(); as acciones) {
+                @if (templateFor(acciones); as plantilla) {
+                  <div class="flex flex-wrap gap-2 pt-1 [&_.flex]:flex-wrap [&_.justify-end]:justify-start">
+                    <ng-container *ngTemplateOutlet="plantilla; context: { $implicit: row, index: index }" />
+                  </div>
+                }
+              }
+            </li>
+          }
+        }
+      </ul>
+    } @else {
+    <div class="relative overflow-x-auto">
       <table class="w-full text-sm" [attr.aria-busy]="cargando()">
         <caption class="sr-only">{{ titulo() }}</caption>
         <thead>
@@ -75,6 +134,7 @@
         </tbody>
       </table>
     </div>
+    }
 
     <div class="flex flex-col items-center justify-between gap-3 border-t border-border px-4 py-3 sm:flex-row">
       <p class="text-sm text-muted-foreground" aria-live="polite">

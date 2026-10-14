@@ -21,7 +21,7 @@
     </button>
   </div>
 } @else {
-  <div class="mb-4 flex flex-wrap items-end gap-3">
+  <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
     @if (opcionesAnio().length > 0) {
       <div>
         <label for="periodos-anio" class="mb-1 block text-xs font-medium text-muted-foreground">Año</label>
@@ -44,7 +44,7 @@
         <option value="CERRADA">Cerradas</option>
       </select>
     </div>
-  </div>
+  </app-filtros-plegables>
 
   <app-server-data-table
     titulo="Quincenas"

@@ -13,16 +13,19 @@ import { IconComponent } from '../icon/icon.component';
   imports: [IconComponent, RouterLink],
   template: `
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div class="space-y-1">
-        <nav class="flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
-          <a routerLink="/dashboard" class="transition-colors hover:text-foreground">Dashboard</a>
+      <div class="min-w-0 space-y-1">
+        <nav class="flex items-center gap-1.5 text-sm text-muted-foreground max-lg:-my-2" aria-label="Breadcrumb">
+          <a routerLink="/dashboard" class="transition-colors hover:text-foreground max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">Dashboard</a>
           <app-icon name="lucideChevronRight" class="size-3.5" />
           <span class="font-medium text-foreground">{{ title() }}</span>
         </nav>
-        <h1 class="text-2xl font-bold tracking-tight">{{ title() }}</h1>
+        <h1 class="text-xl font-bold tracking-tight sm:text-2xl">{{ title() }}</h1>
         <p class="text-sm text-muted-foreground">{{ description() }}</p>
       </div>
-      <ng-content />
+      <!-- The page's main action: full width on phones, natural width from sm up. -->
+      <div class="flex flex-col gap-2 empty:hidden max-sm:[&>*]:w-full sm:flex-row">
+        <ng-content />
+      </div>
     </div>
   `,
 })

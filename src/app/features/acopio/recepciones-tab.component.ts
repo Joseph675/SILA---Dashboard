@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
@@ -14,12 +15,13 @@ import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { ACOPIO_REPOSITORY } from './data/acopio.provider';
 import type { EstadoCalidad, Recepcion } from './models/acopio.models';
 import { cargarProveedoresLecheros } from './proveedores-lecheros';
+import { DocumentosEntidadComponent } from '../documentos/documentos-entidad.component';
 import { RecepcionDialogComponent } from './recepcion-dialog.component';
 
 @Component({
   selector: 'app-recepciones-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [DocumentosEntidadComponent, FiltrosPlegablesComponent, 
     DataTableCellDirective,
     DialogComponent,
     FiltroFechasComponent,
@@ -30,7 +32,7 @@ import { RecepcionDialogComponent } from './recepcion-dialog.component';
     StatusChipComponent,
   ],
   template: `
-    <div class="mb-4 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="recepciones-proveedor" class="mb-1 block text-xs font-medium text-muted-foreground">Proveedor</label>
         <app-selector-buscable idCampo="recepciones-proveedor" [opciones]="proveedores.opciones()" [(valor)]="proveedor" etiquetaVacia="Todos los proveedores" placeholder="Buscar proveedor…" />
@@ -45,11 +47,11 @@ import { RecepcionDialogComponent } from './recepcion-dialog.component';
       </div>
       <app-filtro-fechas idBase="recepciones" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
       <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
-      <button type="button" class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
+      <button type="button" data-accion class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
         Nueva recepción
       </button>
-    </div>
+    </app-filtros-plegables>
     @if (proveedores.hayError()) {
       <p class="mb-3 text-sm text-destructive" role="alert">
         No se pudo cargar la lista de proveedores lecheros. <button type="button" class="underline" (click)="proveedores.recargar()">Reintentar</button>
@@ -93,10 +95,21 @@ import { RecepcionDialogComponent } from './recepcion-dialog.component';
       <ng-template appDataTableCell="motivo_rechazo" [cellRows]="listado.datos()?.items" let-r>
         <span class="block max-w-64 truncate text-muted-foreground" [attr.title]="r.motivo_rechazo">{{ r.motivo_rechazo ?? '—' }}</span>
       </ng-template>
+      <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-r>
+        <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="documentosDe.set(r)">Documentos<span class="sr-only"> de la recepción {{ r.id_recepcion }}</span></button>
+      </ng-template>
       <ng-template appDataTableCell="registro" [cellRows]="listado.datos()?.items" let-r>
         <span class="whitespace-nowrap text-muted-foreground">{{ r.usuario_registro }} · {{ fechaHora(r.fecha_registro) }}</span>
       </ng-template>
     </app-server-data-table>
+
+    <!-- Documents of one reception: the Drive queue records; the real upload does not exist yet. -->
+    <app-dialog [open]="documentosDe() !== null" [title]="'Documentos · Recepción N.º ' + (documentosDe()?.id_recepcion ?? '')" [description]="documentosDe()?.proveedor ?? ''" [wide]="true" (closed)="documentosDe.set(null)">
+      @if (documentosDe(); as r) {
+        <app-documentos-entidad tipoEntidad="RECEPCION_LECHE" [idEntidad]="r.id_recepcion" />
+      }
+      <button dialogFooter type="button" class="sila-btn sila-btn-primary" (click)="documentosDe.set(null)">Cerrar</button>
+    </app-dialog>
 
     <app-recepcion-dialog
       [abierto]="dialogo()"
@@ -149,6 +162,7 @@ export class RecepcionesTabComponent {
   protected readonly hasta = signal('');
 
   protected readonly dialogo = signal(false);
+  protected readonly documentosDe = signal<Recepcion | null>(null);
   protected readonly rechazada = signal<Recepcion | null>(null);
 
   protected readonly fecha = formatoFecha;
@@ -179,6 +193,7 @@ export class RecepcionesTabComponent {
     { key: 'estado_calidad', label: 'Calidad', value: (r) => r.estado_calidad },
     { key: 'motivo_rechazo', label: 'Motivo de rechazo', sortable: false, value: (r) => r.motivo_rechazo ?? '' },
     { key: 'registro', label: 'Registrada por', sortable: false, value: (r) => r.usuario_registro },
+    { key: 'acciones', label: 'Documentos', sortable: false, value: () => '' },
   ];
   protected readonly recepcionId = (r: Recepcion) => r.id_recepcion;
 

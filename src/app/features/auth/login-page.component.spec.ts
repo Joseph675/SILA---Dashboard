@@ -145,16 +145,83 @@ describe('LoginPageComponent', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
-  it('muestra el aviso de bloqueo (423) y el de demasiados intentos (429) tal como llegan', async () => {
-    auth.iniciarSesion.mockReturnValueOnce(error(20014, 'Cuenta bloqueada temporalmente. Intente de nuevo en 15 minutos.'));
+  const GENERICO = 'Usuario o clave incorrectos. Si el problema continua, contacte al administrador.';
+
+  it('una cuenta bloqueada responde como una clave incorrecta (401 genérico): se muestra tal cual', async () => {
+    auth.iniciarSesion.mockReturnValueOnce(error(20013, GENERICO));
     const f = await crear();
 
     await ingresar(f);
-    expect(alerta(f)).toBe('Cuenta bloqueada temporalmente. Intente de nuevo en 15 minutos.');
+    expect(alerta(f)).toBe(GENERICO);
+  });
 
+  it('el 429 del login se muestra tal cual', async () => {
     auth.iniciarSesion.mockReturnValueOnce(error(20015, 'Demasiados intentos. Espere un minuto.'));
-    await enviar(f);
+    const f = await crear();
+
+    await ingresar(f);
     expect(alerta(f)).toBe('Demasiados intentos. Espere un minuto.');
+  });
+
+  it('si un servidor desactualizado aún respondiera 20014 en el login, la pantalla no agrega nada propio: solo el mensaje que llega', async () => {
+    auth.iniciarSesion.mockReturnValueOnce(error(20014, 'Texto del servidor'));
+    const f = await crear();
+
+    await ingresar(f);
+    expect(alerta(f)).toBe('Texto del servidor');
+    expect(raiz(f).textContent).not.toMatch(/Cuenta bloqueada/i);
+  });
+
+  it('un código correcto de /mfa/verificar puede traer CAMBIAR_CLAVE: va a cambiar la clave con ese token temporal', async () => {
+    auth.iniciarSesion.mockReturnValue(of({ estado: 'MFA_REQUERIDO', token_temporal: 'T9' } satisfies AuthResponse));
+    auth.verificarMfa.mockReturnValue(of({ estado: 'CAMBIAR_CLAVE', token_temporal: 'T10' } satisfies AuthResponse));
+    auth.cambiarClave.mockReturnValue(of(OK));
+    const f = await crear();
+
+    await ingresar(f);
+    await escribir(f, 'app-mfa-codigo-form input', '654321');
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(titulo(f)).toBe('Cambia tu clave');
+    await cambiarClave(f);
+    expect(auth.cambiarClave).toHaveBeenCalledExactlyOnceWith('clave-temporal', 'una-clave-nueva-1', 'T10');
+  });
+
+  it('al activar el segundo factor también puede traer CAMBIAR_CLAVE: usa el código y el token del paso y va a cambiar la clave', async () => {
+    auth.iniciarSesion.mockReturnValue(of({ estado: 'MFA_ENROLAR', token_temporal: 'T2' } satisfies AuthResponse));
+    auth.configurarMfa.mockReturnValue(of({ secreto: 'ABCDEFGHIJKLMNOP', otpauth_uri: 'otpauth://totp/SILA:x?secret=ABCDEFGHIJKLMNOP' }));
+    auth.activarMfa.mockReturnValue(of({ estado: 'CAMBIAR_CLAVE', token_temporal: 'T3' } satisfies AuthResponse));
+    auth.cambiarClave.mockReturnValue(of(OK));
+    const f = await crear();
+
+    await ingresar(f);
+    await escribir(f, 'app-mfa-enrolar input', '123456');
+
+    expect(auth.activarMfa).toHaveBeenCalledExactlyOnceWith('123456', 'T2');
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(titulo(f)).toBe('Cambia tu clave');
+    await cambiarClave(f);
+    expect(auth.cambiarClave).toHaveBeenCalledExactlyOnceWith('clave-temporal', 'una-clave-nueva-1', 'T3');
+  });
+
+  it('con un código de respaldo también puede traer CAMBIAR_CLAVE: usa el código y el token del paso y va a cambiar la clave', async () => {
+    auth.iniciarSesion.mockReturnValue(of({ estado: 'MFA_REQUERIDO', token_temporal: 'T9' } satisfies AuthResponse));
+    auth.usarCodigoRespaldo.mockReturnValue(of({ estado: 'CAMBIAR_CLAVE', token_temporal: 'T11' } satisfies AuthResponse));
+    auth.cambiarClave.mockReturnValue(of(OK));
+    const f = await crear();
+
+    await ingresar(f);
+    Array.from(raiz(f).querySelectorAll('button')).find((b) => b.textContent?.includes('código de respaldo'))!.click();
+    await estabilizar(f);
+    await escribir(f, 'app-mfa-respaldo-form input', 'ABCDE-12345');
+    await enviar(f, 'app-mfa-respaldo-form form');
+
+    expect(auth.usarCodigoRespaldo).toHaveBeenCalledTimes(1);
+    expect(auth.usarCodigoRespaldo.mock.calls[0][1]).toBe('T9');
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(titulo(f)).toBe('Cambia tu clave');
+    await cambiarClave(f);
+    expect(auth.cambiarClave).toHaveBeenCalledExactlyOnceWith('clave-temporal', 'una-clave-nueva-1', 'T11');
   });
 
   it('«Volver» regresa al paso 1 y descarta el token temporal', async () => {

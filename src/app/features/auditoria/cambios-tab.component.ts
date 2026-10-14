@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -12,7 +13,7 @@ import type { CambioAuditoria } from './models/auditoria.models';
 @Component({
   selector: 'app-cambios-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
   templateUrl: './cambios-tab.component.html',
 })
 export class CambiosTabComponent {

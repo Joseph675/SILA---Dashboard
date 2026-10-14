@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { rxResource, takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { of } from 'rxjs';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
@@ -10,6 +11,7 @@ import { aplicarCamposDelServidor } from '../../shared/utils/errores-formulario'
 import { hoyColombia } from '../../shared/utils/fecha-co';
 import { formatoCop, formatoNumero } from '../../shared/utils/formato-co';
 import { SilaValidators } from '../../shared/validators/sila-validators';
+import { CATALOGOS_REPOSITORY } from '../catalogos/data/catalogos.provider';
 import { PRODUCCION_REPOSITORY } from './data/produccion.provider';
 import type { ProductoOpcion } from './models/ajuste-tipos';
 import type { Lote, NuevoLote } from './models/produccion.models';
@@ -69,6 +71,27 @@ function vencimientoValido(control: AbstractControl): ValidationErrors | null {
           </app-form-field>
         </div>
 
+        @if (necesidades().length > 0) {
+          <section class="rounded-md border border-border px-4 py-3 text-sm" aria-live="polite" data-testid="insumos-lote">
+            <h3 class="mb-2 text-xs font-medium text-muted-foreground">Insumos que se gastarán (según la receta)</h3>
+            <ul class="space-y-1">
+              @for (n of necesidades(); track n.id_insumo) {
+                <li class="flex flex-wrap items-center justify-between gap-2" [class.text-destructive]="n.falta > 0" [class.font-medium]="n.falta > 0">
+                  <span>{{ n.insumo }}: se necesitan {{ numero(n.necesario) }} {{ n.unidad }} · hay {{ numero(n.stock) }}</span>
+                  @if (n.falta > 0) {
+                    <span data-testid="falta-insumo">Falta {{ numero(n.falta) }} {{ n.unidad }}</span>
+                  }
+                </li>
+              }
+            </ul>
+            @if (hayFaltantes()) {
+              <p class="mt-2 text-xs text-destructive" role="alert">El servidor no creará el lote mientras falte algún insumo (compra más o ajusta la cantidad).</p>
+            }
+          </section>
+        } @else if (recetaVacia()) {
+          <p class="text-xs text-muted-foreground">Este producto no tiene receta: no se descuenta ningún insumo.</p>
+        }
+
         <dl class="grid gap-2 rounded-md bg-muted px-4 py-3 text-sm sm:grid-cols-3" data-testid="calculo-lote" aria-live="polite">
           <div>
             <dt class="text-xs text-muted-foreground">Costo total estimado</dt>
@@ -97,6 +120,8 @@ function vencimientoValido(control: AbstractControl): ValidationErrors | null {
 })
 export class LoteDialogComponent {
   private readonly repo = inject(PRODUCCION_REPOSITORY);
+  /** Optional: without it the recipe preview is simply not shown. */
+  private readonly catalogos = inject(CATALOGOS_REPOSITORY, { optional: true });
   private readonly errores = inject(ApiErrorService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -148,6 +173,23 @@ export class LoteDialogComponent {
   });
 
   private readonly clave = new ClaveIdempotente();
+
+  // ---- Recipe preview: what the lote would consume vs. the insumo stock. Informational: the server decides (409 / 20002). ----
+  private readonly receta = rxResource({
+    params: () => this.producto() ?? undefined,
+    stream: ({ params }) => (this.catalogos ? this.catalogos.obtenerReceta(params) : of(null)),
+  });
+  protected readonly necesidades = computed(() => {
+    const r = this.receta.hasValue() ? this.receta.value() : null;
+    const cantidad = Number(this.valores().cantidad_obtenida);
+    if (!r || !(this.valores().cantidad_obtenida != null && cantidad > 0)) return [];
+    return r.lineas.map((l) => {
+      const necesario = Math.round(cantidad * l.cantidad_por_unidad * 10000) / 10000;
+      return { id_insumo: l.id_insumo, insumo: l.insumo, unidad: l.unidad_insumo, necesario, stock: l.stock_insumo, falta: Math.max(0, Math.round((necesario - l.stock_insumo) * 10000) / 10000) };
+    });
+  });
+  protected readonly hayFaltantes = computed(() => this.necesidades().some((n) => n.falta > 0));
+  protected readonly recetaVacia = computed(() => this.receta.hasValue() && this.receta.value() !== null && this.receta.value()!.lineas.length === 0);
 
   constructor() {
     effect(() => {
@@ -212,6 +254,8 @@ export class LoteDialogComponent {
       case 20004:
         this.errorGeneral.set('La quincena de esa fecha de producción está cerrada. Cambia la fecha o pide a un administrador que la reabra.');
         break;
+      case 20002:
+        // «Falta <insumo>: se necesitan X y hay Y.»: the generic text would hide which insumo is short.
       case 20006:
         this.errorGeneral.set(error.message);
         break;

@@ -12,7 +12,10 @@ export interface Lote {
   litros_leche_usados: number;
   cantidad_obtenida: number;
   porcentaje_rendimiento: number;
+  /** costo_leche + costo_insumos, frozen in the lote. */
   costo_total: number;
+  costo_leche: number;
+  costo_insumos: number;
   costo_unitario: number;
   fecha_vencimiento: string;
   dias_restantes: number;

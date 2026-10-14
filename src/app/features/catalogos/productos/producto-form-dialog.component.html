@@ -30,6 +30,12 @@
       </app-form-field>
     }
 
+    @if (modo() === 'crear') {
+      <div class="sm:col-span-2">
+        <app-receta-editor [(lineas)]="receta" [error]="errorReceta()" />
+      </div>
+    }
+
     @if (modo() === 'editar' && producto(); as actual) {
       <p class="text-sm text-muted-foreground sm:col-span-2">
         Stock actual: <strong class="text-foreground">{{ numero(actual.stock) }} {{ actual.unidad_medida }}</strong>.

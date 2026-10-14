@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -12,6 +13,7 @@ import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { etiquetaNivel, textoDias, tonoNivel } from './caducidad.format';
 import { PRODUCCION_REPOSITORY } from './data/produccion.provider';
+import { ConsumosLoteDialogComponent } from './consumos-lote-dialog.component';
 import { LoteDialogComponent } from './lote-dialog.component';
 import type { Lote } from './models/produccion.models';
 import { cargarProductosActivos } from './productos-activos';
@@ -19,9 +21,9 @@ import { cargarProductosActivos } from './productos-activos';
 @Component({
   selector: 'app-lotes-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, FiltroFechasComponent, IconComponent, LoteDialogComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [ConsumosLoteDialogComponent, FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, LoteDialogComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
-    <div class="mb-4 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-56">
         <label for="lotes-texto" class="mb-1 block text-xs font-medium text-muted-foreground">Código de lote o producto</label>
         <input id="lotes-texto" type="search" class="sila-input" placeholder="Buscar…" maxlength="100" [value]="texto.crudo()" (input)="texto.crudo.set($any($event.target).value)" />
@@ -32,11 +34,11 @@ import { cargarProductosActivos } from './productos-activos';
       </div>
       <app-filtro-fechas idBase="lotes" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
       <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
-      <button type="button" class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
+      <button type="button" data-accion class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
         Nuevo lote
       </button>
-    </div>
+    </app-filtros-plegables>
     @if (productos.hayError()) {
       <p class="mb-3 text-sm text-destructive" role="alert">
         No se pudo cargar la lista de productos. <button type="button" class="underline" (click)="productos.recargar()">Reintentar</button>
@@ -77,6 +79,15 @@ import { cargarProductosActivos } from './productos-activos';
       <ng-template appDataTableCell="costo_total" [cellRows]="listado.datos()?.items" let-l>
         <span class="tabular-nums">{{ cop(l.costo_total) }}</span>
       </ng-template>
+      <ng-template appDataTableCell="costo_leche" [cellRows]="listado.datos()?.items" let-l>
+        <span class="tabular-nums">{{ cop(l.costo_leche) }}</span>
+      </ng-template>
+      <ng-template appDataTableCell="costo_insumos" [cellRows]="listado.datos()?.items" let-l>
+        <span class="tabular-nums">{{ cop(l.costo_insumos) }}</span>
+      </ng-template>
+      <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-l>
+        <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="costosDe.set(l)">Ver costos<span class="sr-only"> del lote {{ l.codigo_lote }}</span></button>
+      </ng-template>
       <ng-template appDataTableCell="costo_unitario" [cellRows]="listado.datos()?.items" let-l>
         <span class="tabular-nums">{{ cop(l.costo_unitario) }}</span>
       </ng-template>
@@ -93,6 +104,7 @@ import { cargarProductosActivos } from './productos-activos';
       </ng-template>
     </app-server-data-table>
 
+    <app-consumos-lote-dialog [lote]="costosDe()" (cerrar)="costosDe.set(null)" />
     <app-lote-dialog [abierto]="dialogo()" [productos]="productos.productos()" (registrado)="alRegistrar($event)" (cerrar)="dialogo.set(false)" />
   `,
 })
@@ -107,6 +119,7 @@ export class LotesTabComponent {
   protected readonly desde = signal('');
   protected readonly hasta = signal('');
   protected readonly dialogo = signal(false);
+  protected readonly costosDe = signal<Lote | null>(null);
 
   protected readonly fecha = formatoFecha;
   protected readonly numero = formatoNumero;
@@ -134,9 +147,12 @@ export class LotesTabComponent {
     { key: 'cantidad_obtenida', label: 'Cantidad', align: 'end', value: (l) => l.cantidad_obtenida },
     { key: 'porcentaje_rendimiento', label: 'Rendimiento', align: 'end', value: (l) => l.porcentaje_rendimiento },
     { key: 'costo_total', label: 'Costo total', align: 'end', value: (l) => l.costo_total },
+    { key: 'costo_leche', label: 'Costo leche', align: 'end', sortable: false, ocultarEnMovil: true, value: (l) => l.costo_leche },
+    { key: 'costo_insumos', label: 'Costo insumos', align: 'end', sortable: false, ocultarEnMovil: true, value: (l) => l.costo_insumos },
     { key: 'costo_unitario', label: 'Costo unitario', align: 'end', sortable: false, value: (l) => l.costo_unitario },
     { key: 'fecha_vencimiento', label: 'Vencimiento', value: (l) => formatoFecha(l.fecha_vencimiento) },
     { key: 'dias_restantes', label: 'Días restantes', value: (l) => l.dias_restantes },
+    { key: 'acciones', label: 'Costos', sortable: false, value: () => '' },
   ];
   protected readonly loteId = (l: Lote) => l.id_lote;
 

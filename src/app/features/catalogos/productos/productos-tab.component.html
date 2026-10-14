@@ -71,6 +71,10 @@
         <app-icon name="lucidePencil" class="size-3.5" aria-hidden="true" />
         Editar<span class="sr-only"> {{ producto.nombre }}</span>
       </button>
+      <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="recetaDe.set({ id: producto.id_producto, editar: false })">
+        <app-icon name="lucideListChecks" class="size-3.5" aria-hidden="true" />
+        Receta<span class="sr-only"> de {{ producto.nombre }}</span>
+      </button>
       <!-- Hiding is not security: the procedures reject OPERATIVO with 20008 anyway. -->
       <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="abrir('precio', producto)">
         <app-icon name="lucideTag" class="size-3.5" aria-hidden="true" />
@@ -89,8 +93,11 @@
   [modo]="dialogo()?.modo ?? 'crear'"
   [producto]="dialogo()?.producto ?? null"
   (guardado)="alGuardar($event)"
+  (recetaFallida)="alFallarReceta($event)"
   (cerrar)="dialogo.set(null)"
 />
+
+<app-receta-dialog [idProducto]="recetaDe()?.id ?? null" [editarAlAbrir]="recetaDe()?.editar ?? false" (cerrar)="recetaDe.set(null)" (guardada)="listado.recargar()" />
 
 <app-confirm-dialog
   [open]="cambiandoEstado() !== null"

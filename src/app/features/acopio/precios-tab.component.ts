@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
@@ -20,9 +21,9 @@ import { cargarProveedoresLecheros } from './proveedores-lecheros';
 @Component({
   selector: 'app-precios-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, HasRoleDirective, IconComponent, PrecioLecheDialogComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, HasRoleDirective, IconComponent, PrecioLecheDialogComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
-    <div class="mb-3 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-3 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="precios-lechero" class="mb-1 block text-xs font-medium text-muted-foreground">Lechero</label>
         <app-selector-buscable idCampo="precios-lechero" [opciones]="proveedores.opciones()" [(valor)]="proveedor" etiquetaVacia="Todos los lecheros" placeholder="Buscar lechero…" />
@@ -31,11 +32,11 @@ import { cargarProveedoresLecheros } from './proveedores-lecheros';
         <input type="checkbox" class="size-4" [checked]="soloVigentes()" (change)="soloVigentes.set($any($event.target).checked)" />
         Solo los vigentes
       </label>
-      <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
+      <button *hasRole="'ADMIN'" type="button" data-accion class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
         Fijar precio
       </button>
-    </div>
+    </app-filtros-plegables>
     <p class="mb-3 rounded-md bg-muted px-4 py-2 text-sm" data-testid="precio-defecto">
       Los lecheros sin precio propio se pagan al <strong>precio por defecto</strong>: {{ porDefecto() === null ? '—' : cop(porDefecto()!) }} por litro (parámetro «Precio de la leche por defecto»).
       Un precio nuevo solo afecta las entregas nuevas; las ya registradas conservan el suyo.

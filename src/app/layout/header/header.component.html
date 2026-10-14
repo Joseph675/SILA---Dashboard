@@ -1,10 +1,11 @@
 <div class="sticky top-0 z-30">
-  <header class="flex h-16 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-xl sm:px-6">
+  <header class="sila-header flex h-16 items-center justify-between border-b border-border bg-background/80 px-3 backdrop-blur-xl sm:px-6">
     <div class="flex items-center gap-3">
       <button
         type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
-        aria-label="Open menu"
+        class="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:hidden"
+        aria-label="Abrir menú"
+        [attr.aria-expanded]="sidebarState.mobileOpen()"
         (click)="sidebarState.openMobile()"
       >
         <app-icon name="lucideMenu" class="h-5 w-5" />
@@ -12,7 +13,7 @@
 
       <button
         type="button"
-        class="relative hidden h-9 w-72 items-center rounded-lg border border-input bg-muted/40 ps-9 pe-4 text-start text-sm text-muted-foreground/50 transition-colors hover:bg-muted/60 sm:flex"
+        class="relative hidden h-9 w-72 items-center rounded-lg border border-input bg-muted/40 ps-9 pe-4 text-start text-sm text-muted-foreground/50 transition-colors hover:bg-muted/60 lg:flex"
       >
         <app-icon name="lucideSearch" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
         Search...
@@ -39,14 +40,14 @@
 
       <button
         type="button"
-        class="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        class="hidden h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:flex"
         aria-label="Customize theme"
         (click)="customizer.toggle()"
       >
         <app-icon name="lucidePalette" class="h-4 w-4" />
       </button>
 
-      <div class="relative">
+      <div class="relative hidden sm:block">
         <button
           type="button"
           class="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

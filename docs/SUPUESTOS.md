@@ -127,3 +127,29 @@ Decisiones tomadas donde `prompt.md` no fija la regla. En el código cada una ll
 | CP-05 | Los listados de precios, pagos y por lechero no envían `sort` (el contrato no lista los permitidos); «Cuánto le debo» solo ordena por saldo (su orden por defecto). | `precios-tab`, `pagos-tabla`, `lecheros-tab` |
 | CP-06 | «Registrar pago» ofrece solo las quincenas con saldo, de la más antigua a la más nueva (por defecto la primera, o la de la que se abrió). Fijar un precio no usa `Idempotency-Key` (el contrato no la exige); los pagos y anulaciones sí. | `pago-lechero-dialog.component.ts` |
 | CP-07 | Desde «Cuentas de la quincena», con la quincena CERRADA el botón «Pagar» queda deshabilitado (así lo pide la pantalla); el servidor igual decide según la quincena de la fecha del pago. | `cuentas-quincena-page.component.ts` |
+
+## Insumos y recetas
+
+| ID | Supuesto | Dónde |
+|---|---|---|
+| IR-01 | «Insumos» (menú Producción y acopio, `/insumos`) la ve todo usuario con sesión; crear/editar/activar, comprar, anular compras y definir recetas se ofrece solo a ADMIN (los botones se ocultan; el servidor decide con 403 / 20008). Un OPERATIVO ve y registra ajustes de merma, daño y vencimiento. | `insumos-page.component.ts` y pestañas |
+| IR-02 | Los selectores de insumo y de proveedor de insumos piden la primera página de 100 (el máximo del API) de activos por nombre. | `insumos-activos.ts`, `compras-tab.component.ts` |
+| IR-03 | En «Registrar compra» el costo unitario mostrado es valor de la factura ÷ cantidad a 2 decimales, solo informativo; el servidor calcula el real y el costo promedio. Se envía `valor_total` (nunca un precio unitario). | `compra-dialog.component.ts` |
+| IR-04 | El contrato no define `sort` para compras, ajustes ni consumos: no se envía ninguno. El listado de insumos solo ordena por los 5 campos que el contrato lista. | pestañas de Insumos |
+| IR-05 | La receta se edita enviando la lista completa; las filas totalmente vacías se descartan, la cantidad acepta coma decimal y una receta vacía es válida. Si al crear un producto la receta falla, el servidor deja el producto creado: el diálogo no deja reintentar el alta y se abre el editor de receta de ese producto (el id sale del mensaje «se creó (id N)»). | `receta-editor.component.ts`, `producto-form-dialog.component.ts` |
+| IR-06 | En el formulario de lote, la vista previa de insumos (cantidad × cantidad por unidad frente al stock) es informativa y NO bloquea el envío: el servidor responde 409 / 20002 con el insumo que falta, y ese mensaje se muestra tal cual. | `lote-dialog.component.ts` |
+| IR-07 | La receta se puede consultar desde el botón «Receta» de cada producto por cualquier rol; solo un ADMIN ve «Editar receta». | `productos-tab.component.html`, `receta-dialog.component.ts` |
+| IR-08 | En las cuentas de la quincena, `caja_neta` resta las compras de insumos (se asume que se pagan al comprar) y el resultado no cambia: los insumos entran por el costo de producción al producir. | `cuentas-quincena-page.component.ts` |
+| IR-09 | El contrato no detalla los campos de `Compra`, `AjusteInsumo` ni `ConsumoLote`; se tiparon con las respuestas reales del backend (por ejemplo, la compra trae `fecha` y `costo_unitario`, el ajuste `cantidad_delta` y `valor_delta`). | `insumos.models.ts` |
+
+## Gastos y documentos
+
+| ID | Supuesto | Dónde |
+|---|---|---|
+| GD-01 | En «Gastos» la quincena actual viene preseleccionada (si hoy no tiene quincena, se muestran todas); el estado por defecto es «Todos» (los anulados se ven tachados). El total de la tarjeta usa exactamente los mismos filtros que la tabla y no suma los anulados. | `gastos-tab.component.ts` |
+| GD-02 | El detalle de un gasto anulado (motivo, usuario, fecha) se muestra en la misma fila, junto a la insignia «Anulado»; no hay pantalla de detalle aparte. «Anular» solo se ofrece a un ADMIN y solo a gastos vigentes; el servidor decide (403 / 20008, 409 / 20004 y 20010). | `gastos-tab.component.ts` |
+| GD-03 | El parámetro `soloActivas` de `/finanzas/categorias` va en camelCase, como lo pide el encargo y a diferencia del resto del API (snake_case). El contrato no documenta las categorías; se tiparon con la respuesta real (`id_categoria`, `nombre`, `activo`, arreglo simple). | `http-gastos.repository.ts` |
+| GD-04 | «Por categoría» usa la ruta nueva `/finanzas/gastos/por-categoria` (la que antes era `/finanzas/gastos`); su forma real es `{id_periodo, anio, mes, quincena, categoria, total_gastos}` y el «Total mostrado» se suma en pantalla. | `por-categoria-tab.component.ts` |
+| GD-05 | El contrato no define filtros de fecha ni orden fuera de los listados; en Gastos solo se ordena por los 6 campos que lista (sin ordenar por quincena ni usuario). | `gastos-tab.component.ts` |
+| GD-06 | Documentos: «Registrar documento» está en el detalle de la recepción (acción «Documentos» de cada fila) y la lista general vive en `/documentos` (Administración). La subida real a Drive no existe: queda un gancho (`SUBIDOR_DOCUMENTOS`, por defecto `null`) y un servicio que, si algún día hay subidor, reporta `subido` o `error` con el resultado REAL. Sin subidor no hay botón de subir y nunca se marca SUBIDO. | `documentos/subida-drive.ts`, `documentos.service.ts` |
+| GD-07 | Solo se ofrece como enlace una `drive_url` que empiece por `http://` o `https://`. | `documento-estado.ts` |

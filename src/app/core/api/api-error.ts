@@ -58,8 +58,8 @@ const MENSAJES: Record<number, string> = {
   20012: 'No hay una resolución de facturación vigente.',
   20016: 'Hay otra solicitud igual en proceso. Espera un momento.',
   20017: 'Esa operación ya se envió con datos distintos. Vuelve a empezar.',
-  // 20013 (no autenticado), 20014 (cuenta bloqueada, trae los minutos) y 20015 (demasiados intentos)
-  // no están aquí a propósito: se muestra el mensaje del servidor, que es genérico o trae el dato.
+  // 20013 (no autenticado), 20014 (cuenta bloqueada: solo en pasos con la clave ya demostrada, NO en el login) y
+  // 20015 (demasiados intentos) no están aquí a propósito: se muestra el mensaje del servidor.
 };
 
 /** Single place that turns any failure into a message and a UI action. */

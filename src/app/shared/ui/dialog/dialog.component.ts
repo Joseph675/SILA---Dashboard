@@ -20,7 +20,7 @@ import { IconComponent } from '../icon/icon.component';
       (close)="closed.emit()"
       (click)="onDialogClick($event)"
     >
-      <div class="flex items-start justify-between gap-4 border-b border-border p-4">
+      <div class="flex shrink-0 items-start justify-between gap-4 border-b border-border p-4">
         <div>
           <h2 class="text-base font-semibold">{{ title() }}</h2>
           @if (description()) {
@@ -34,10 +34,10 @@ import { IconComponent } from '../icon/icon.component';
           </button>
         }
       </div>
-      <div class="p-4">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
         <ng-content />
       </div>
-      <div class="flex justify-end gap-2 border-t border-border p-4">
+      <div class="flex shrink-0 flex-wrap justify-end gap-2 border-t border-border p-4 max-sm:[&>*]:flex-1">
         <ng-content select="[dialogFooter]" />
       </div>
     </dialog>

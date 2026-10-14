@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -24,9 +25,9 @@ export function deltaConUnidad(delta: number, unidad: string): string {
 @Component({
   selector: 'app-ajustes-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AjusteDialogComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [FiltrosPlegablesComponent, AjusteDialogComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
-    <div class="mb-2 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-2 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="ajustes-producto" class="mb-1 block text-xs font-medium text-muted-foreground">Producto</label>
         <app-selector-buscable idCampo="ajustes-producto" [opciones]="productos.opciones()" [(valor)]="producto" etiquetaVacia="Todos los productos" placeholder="Buscar producto…" />
@@ -42,11 +43,11 @@ export function deltaConUnidad(delta: number, unidad: string): string {
       </div>
       <app-filtro-fechas idBase="ajustes" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
       <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="limpiar()">Quitar filtros</button>
-      <button type="button" class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
+      <button type="button" data-accion class="sila-btn sila-btn-primary ms-auto" (click)="dialogo.set(true)">
         <app-icon name="lucidePlus" class="size-4" aria-hidden="true" />
         Nuevo ajuste
       </button>
-    </div>
+    </app-filtros-plegables>
     @if (productos.hayError()) {
       <p class="mb-2 text-sm text-destructive" role="alert">
         No se pudo cargar la lista de productos. <button type="button" class="underline" (click)="productos.recargar()">Reintentar</button>

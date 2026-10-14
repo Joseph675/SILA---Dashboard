@@ -1,13 +1,13 @@
-<div class="flex min-h-screen bg-background">
+<div class="flex min-h-dvh bg-background">
   <app-sidebar />
 
   <div
-    class="sila-content flex min-h-screen min-w-0 flex-1 flex-col"
+    class="sila-content flex min-h-dvh min-w-0 flex-1 flex-col"
     [class.sila-content-collapsed]="sidebarState.collapsed()"
   >
     <app-header />
 
-    <main id="main-content" class="flex-1 p-4 sm:p-6">
+    <main id="main-content" class="min-w-0 flex-1 p-3 sm:p-6">
       <app-aviso-respaldo />
       <router-outlet />
     </main>

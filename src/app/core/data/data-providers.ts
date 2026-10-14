@@ -9,6 +9,12 @@ import { HttpPreciosClienteRepository } from '../../features/precios-cliente/dat
 import { PRECIOS_CLIENTE_REPOSITORY } from '../../features/precios-cliente/data/precios-cliente.provider';
 import { HttpVentasRepository } from '../../features/ventas/data/http-ventas.repository';
 import { VENTAS_REPOSITORY } from '../../features/ventas/data/ventas.provider';
+import { HttpInsumosRepository } from '../../features/insumos/data/http-insumos.repository';
+import { INSUMOS_REPOSITORY } from '../../features/insumos/data/insumos.provider';
+import { DOCUMENTOS_REPOSITORY } from '../../features/documentos/data/documentos.provider';
+import { HttpDocumentosRepository } from '../../features/documentos/data/http-documentos.repository';
+import { GASTOS_REPOSITORY } from '../../features/gastos/data/gastos.provider';
+import { HttpGastosRepository } from '../../features/gastos/data/http-gastos.repository';
 import { AUDITORIA_REPOSITORY } from '../../features/auditoria/data/auditoria.provider';
 import { HttpAuditoriaRepository } from '../../features/auditoria/data/http-auditoria.repository';
 import { CATALOGOS_REPOSITORY } from '../../features/catalogos/data/catalogos.provider';
@@ -32,6 +38,9 @@ export function provideDataLayer(): Provider[] {
     { provide: ACOPIO_REPOSITORY, useExisting: HttpAcopioRepository },
     { provide: PRODUCCION_REPOSITORY, useExisting: HttpProduccionRepository },
     { provide: INVENTARIO_REPOSITORY, useExisting: HttpInventarioRepository },
+    { provide: INSUMOS_REPOSITORY, useExisting: HttpInsumosRepository },
+    { provide: GASTOS_REPOSITORY, useExisting: HttpGastosRepository },
+    { provide: DOCUMENTOS_REPOSITORY, useExisting: HttpDocumentosRepository },
     { provide: VENTAS_REPOSITORY, useExisting: HttpVentasRepository },
     { provide: PRECIOS_CLIENTE_REPOSITORY, useExisting: HttpPreciosClienteRepository },
     { provide: CARTERA_REPOSITORY, useExisting: HttpCarteraRepository },

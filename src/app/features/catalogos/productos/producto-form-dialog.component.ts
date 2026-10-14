@@ -7,6 +7,7 @@ import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
 import { formatoNumero } from '../../../shared/utils/formato-co';
 import { SilaValidators, limpiarTexto } from '../../../shared/validators/sila-validators';
+import { LineaEdicion, RecetaEditorComponent, validarReceta } from '../recetas/receta-editor.component';
 import { PARAMETROS_REPOSITORY } from '../../parametros/data/parametros.provider';
 import { CATALOGOS_REPOSITORY } from '../data/catalogos.provider';
 import { Producto, UNIDADES_MEDIDA, UnidadMedida } from '../models/catalogos.models';
@@ -23,7 +24,7 @@ const TITULOS: Record<ModoProducto, string> = {
 @Component({
   selector: 'app-producto-form-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule, RecetaEditorComponent],
   templateUrl: './producto-form-dialog.component.html',
 })
 export class ProductoFormDialogComponent {
@@ -39,6 +40,11 @@ export class ProductoFormDialogComponent {
   readonly abierto = input(false);
 
   readonly guardado = output<Producto>();
+  /**
+   * The product was created but its recipe was NOT saved (two steps in the database). Retrying the creation would
+   * duplicate the SKU, so the page opens the recipe editor of that product instead.
+   */
+  readonly recetaFallida = output<{ idProducto: number; mensaje: string }>();
   readonly cerrar = output<void>();
 
   protected readonly unidades = UNIDADES_MEDIDA;
@@ -46,6 +52,8 @@ export class ProductoFormDialogComponent {
   protected readonly guardando = signal(false);
   protected readonly errorGeneral = signal<string | null>(null);
   protected readonly numero = formatoNumero;
+  protected readonly receta = signal<LineaEdicion[]>([]);
+  protected readonly errorReceta = signal<string | null>(null);
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     codigo_sku: ['', [SilaValidators.requerido, SilaValidators.sku]],
@@ -61,6 +69,8 @@ export class ProductoFormDialogComponent {
       const producto = this.producto();
       const modo = this.modo();
       this.errorGeneral.set(null);
+      this.receta.set([]);
+      this.errorReceta.set(null);
       this.form.reset({
         codigo_sku: producto?.codigo_sku ?? '',
         nombre: producto?.nombre ?? '',
@@ -112,15 +122,20 @@ export class ProductoFormDialogComponent {
     const actual = this.producto();
     let peticion: Observable<Producto>;
     switch (this.modo()) {
-      case 'crear':
+      case 'crear': {
+        const { lineas, error } = validarReceta(this.receta());
+        this.errorReceta.set(error);
+        if (error) return;
         peticion = this.repo.crearProducto({
           codigo_sku: valor.codigo_sku.trim(),
           nombre: limpiarTexto(valor.nombre),
           unidad_medida: valor.unidad_medida,
           precio_base: Number(valor.precio_base),
           tarifa_iva: Number(valor.tarifa_iva),
+          ...(lineas.length > 0 ? { receta: lineas } : {}),
         });
         break;
+      }
       case 'editar':
         peticion = this.repo.actualizarProducto(actual!.id_producto, { nombre: limpiarTexto(valor.nombre), unidad_medida: valor.unidad_medida });
         break;
@@ -138,6 +153,12 @@ export class ProductoFormDialogComponent {
       },
       error: (error: unknown) => {
         this.guardando.set(false);
+        // «El producto se creó (id N) pero la receta no se guardó…»: the product EXISTS; do not offer to create it again.
+        const parcial = isApiError(error) && this.modo() === 'crear' ? /se cre[óo] \(id (\d+)\)/i.exec(error.message) : null;
+        if (parcial && isApiError(error)) {
+          this.recetaFallida.emit({ idProducto: Number(parcial[1]), mensaje: error.message });
+          return;
+        }
         if (isApiError(error) && error.code === 20006 && this.modo() === 'crear') {
           this.form.controls.codigo_sku.setErrors({ duplicado: true });
           this.enfocarPrimerError();

@@ -24,13 +24,13 @@ const PESTANAS: readonly { id: Pestana; etiqueta: string; icono: IconName }[] = 
   template: `
     <app-page-header title="Auditoría y accesos" description="Quién entró, qué cambió y qué falló. Solo lectura: las bitácoras no se modifican ni se borran." />
 
-    <div role="tablist" aria-label="Auditoría" class="mb-6 inline-flex gap-1 rounded-lg bg-muted p-1">
+    <div role="tablist" aria-label="Auditoría" class="mb-6 flex w-full snap-x gap-1 overflow-x-auto overscroll-x-contain rounded-lg bg-muted p-1 sm:inline-flex sm:w-auto sm:max-w-full">
       @for (pestana of pestanas; track pestana.id; let i = $index) {
         <button
           #tab
           type="button"
           role="tab"
-          class="sila-tab focus-visible:outline-2 focus-visible:outline-ring"
+          class="sila-tab shrink-0 snap-start focus-visible:outline-2 focus-visible:outline-ring"
           [class.sila-tab-active]="activa() === pestana.id"
           [id]="'tab-' + pestana.id"
           [attr.aria-selected]="activa() === pestana.id"

@@ -12,6 +12,7 @@ import { StatusChipComponent } from '../../../shared/ui/status-chip/status-chip.
 import { ToastService } from '../../../shared/ui/toast/toast.service';
 import { formatoCop, formatoNumero } from '../../../shared/utils/formato-co';
 import { crearListado } from '../../../shared/utils/listado';
+import { RecetaDialogComponent } from '../recetas/receta-dialog.component';
 import { CATALOGOS_REPOSITORY } from '../data/catalogos.provider';
 import { FiltroActivo, Producto, activoDesdeFiltro } from '../models/catalogos.models';
 import { ModoProducto, ProductoFormDialogComponent } from './producto-form-dialog.component';
@@ -25,7 +26,7 @@ const MENSAJES_GUARDADO: Record<ModoProducto, string> = {
 @Component({
   selector: 'app-productos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [RecetaDialogComponent, 
     ConfirmDialogComponent,
     DataTableCellDirective,
     HasRoleDirective,
@@ -61,7 +62,7 @@ export class ProductosTabComponent {
 
   protected readonly columnas: DataTableColumn<Producto>[] = [
     { key: 'codigo_sku', label: 'SKU', value: (p) => p.codigo_sku },
-    { key: 'nombre', label: 'Nombre', value: (p) => p.nombre },
+    { key: 'nombre', label: 'Nombre', rol: 'titulo', value: (p) => p.nombre },
     { key: 'unidad_medida', label: 'Unidad', value: (p) => p.unidad_medida },
     { key: 'precio_base', label: 'Precio base', align: 'end', value: (p) => p.precio_base },
     { key: 'tarifa_iva', label: 'IVA', align: 'end', value: (p) => p.tarifa_iva },
@@ -76,6 +77,8 @@ export class ProductosTabComponent {
 
   protected readonly dialogo = signal<{ modo: ModoProducto; producto: Producto | null } | null>(null);
   protected readonly cambiandoEstado = signal<Producto | null>(null);
+  /** Recipe dialog: which product, and whether it opens in edit mode. */
+  protected readonly recetaDe = signal<{ id: number; editar: boolean } | null>(null);
   protected readonly procesandoEstado = signal(false);
 
   protected cambiarFiltro(valor: string): void {
@@ -91,6 +94,14 @@ export class ProductosTabComponent {
     this.dialogo.set(null);
     this.toast.exito(`Producto "${producto.nombre}" ${MENSAJES_GUARDADO[modo]}.`);
     this.listado.recargar();
+  }
+
+  /** The product exists but its recipe did not save: show the server's message and open that recipe in edit mode. */
+  protected alFallarReceta(fallo: { idProducto: number; mensaje: string }): void {
+    this.dialogo.set(null);
+    this.listado.recargar();
+    this.toast.error(fallo.mensaje);
+    this.recetaDe.set({ id: fallo.idProducto, editar: true });
   }
 
   protected confirmarEstado(): void {

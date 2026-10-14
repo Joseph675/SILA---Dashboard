@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
@@ -19,7 +20,7 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
 @Component({
   selector: 'app-clientes-cartera-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AbonoDialogComponent, CastigoDialogComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent, VentasPendientesDialogComponent],
+  imports: [FiltrosPlegablesComponent, AbonoDialogComponent, CastigoDialogComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent, VentasPendientesDialogComponent],
   template: `
     <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <div class="sila-card p-4">
@@ -43,7 +44,7 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
       <p class="-mt-3 mb-4 text-sm text-destructive" role="alert">No se pudo cargar el resumen. <button type="button" class="underline" (click)="resumen.reload()">Reintentar</button></p>
     }
 
-    <div class="mb-4 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="cartera-texto" class="mb-1 block text-xs font-medium text-muted-foreground">Cliente</label>
         <input id="cartera-texto" type="search" class="sila-input" placeholder="Buscar por nombre…" maxlength="100" [value]="texto.crudo()" (input)="texto.crudo.set($any($event.target).value)" />
@@ -65,7 +66,7 @@ import { VentasPendientesDialogComponent } from './ventas-pendientes-dialog.comp
         <input type="checkbox" class="size-4" [checked]="soloConDeuda()" (change)="soloConDeuda.set($any($event.target).checked)" />
         Solo con deuda
       </label>
-    </div>
+    </app-filtros-plegables>
 
     <app-server-data-table
       titulo="Clientes con deuda"

@@ -314,6 +314,11 @@ export class PuntoVentaPageComponent {
     setTimeout(() => this.buscador()?.nativeElement.focus());
   }
 
+  /** Phones: the summary bar takes the person to the ticket (payments, client…). */
+  protected irAlTicket(): void {
+    document.getElementById('pv-ticket')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }
+
   protected imprimir(): void {
     imprimirTicket();
   }

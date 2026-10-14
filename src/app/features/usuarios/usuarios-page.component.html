@@ -5,7 +5,7 @@
   </button>
 </app-page-header>
 
-<div class="mb-4 flex flex-wrap items-end gap-3">
+<app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
   <div class="w-full sm:w-72">
     <label for="usuarios-buscar" class="mb-1 block text-xs font-medium text-muted-foreground">Buscar</label>
     <div class="relative">
@@ -37,7 +37,7 @@
       <option value="INACTIVOS">Inactivos</option>
     </select>
   </div>
-</div>
+</app-filtros-plegables>
 
 <app-server-data-table
   titulo="Usuarios"

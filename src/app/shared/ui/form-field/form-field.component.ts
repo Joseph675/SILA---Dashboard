@@ -16,7 +16,7 @@ let siguienteId = 0;
   selector: 'app-form-field',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="space-y-1.5">
+    <div class="min-w-0 space-y-1.5">
       <label [attr.for]="campoId" class="text-sm font-medium">
         {{ etiqueta() }}
         @if (obligatorio()) {
@@ -27,7 +27,7 @@ let siguienteId = 0;
       @if (ayuda() && !error()) {
         <p [id]="ayudaId" class="text-xs text-muted-foreground">{{ ayuda() }}</p>
       }
-      <p [id]="errorId" class="text-xs font-medium text-destructive" aria-live="polite">{{ error() }}</p>
+      <p [id]="errorId" class="break-words text-xs font-medium text-destructive" aria-live="polite">{{ error() }}</p>
     </div>
   `,
 })

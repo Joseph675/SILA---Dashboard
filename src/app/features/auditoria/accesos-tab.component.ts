@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -20,7 +21,7 @@ function hoyUtc(): string {
 @Component({
   selector: 'app-accesos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent, StatusChipComponent],
   templateUrl: './accesos-tab.component.html',
 })
 export class AccesosTabComponent {

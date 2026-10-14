@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
@@ -20,9 +21,9 @@ function pendiente(estado: string): boolean {
 @Component({
   selector: 'app-pago-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, SelectorBuscableComponent, ServerDataTableComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, SelectorBuscableComponent, ServerDataTableComponent],
   template: `
-    <div class="mb-3 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-3 flex flex-wrap items-end gap-3">
       <div>
         <label for="pago-periodo" class="mb-1 block text-xs font-medium text-muted-foreground">Quincena</label>
         <select id="pago-periodo" class="sila-select w-64" (change)="cambiarPeriodo($any($event.target).value)">
@@ -36,7 +37,7 @@ function pendiente(estado: string): boolean {
         <label for="pago-proveedor" class="mb-1 block text-xs font-medium text-muted-foreground">Proveedor</label>
         <app-selector-buscable idCampo="pago-proveedor" [opciones]="proveedores.opciones()" [(valor)]="proveedor" etiquetaVacia="Todos los proveedores" placeholder="Buscar proveedor…" />
       </div>
-    </div>
+    </app-filtros-plegables>
     <p class="mb-3 text-sm text-muted-foreground">Lo rechazado no se paga: los litros rechazados se muestran aparte y no entran en «litros a pagar».</p>
 
     <app-server-data-table

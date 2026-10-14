@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import { EsMovilService } from '../../shared/services/es-movil.service';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
 import { formatoCop, formatoFecha, formatoFechaHora, formatoNumero } from '../../shared/utils/formato-co';
 import type { VentaDetalle } from './models/ventas.models';
@@ -58,7 +59,27 @@ import { chipEstadoPago, etiquetaMetodo, etiquetaTipoVenta } from './ventas.form
         <p class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2" role="status"><strong>Venta anulada.</strong> Motivo: {{ v.motivo_anulacion }}</p>
       }
 
-      <div class="overflow-x-auto">
+      @if (movil()) {
+        <ul class="divide-y divide-border" aria-label="Líneas de la venta">
+          @for (l of detalle().lineas; track l.id_detalle) {
+            <li class="min-w-0 space-y-1 py-2">
+              <p class="break-words font-medium">
+                {{ l.producto }}
+                @if (l.precio_pactado) {
+                  <span class="ms-1 rounded bg-primary/15 px-1.5 py-0.5 text-xs font-medium">Precio pactado</span>
+                }
+              </p>
+              <p class="text-xs text-muted-foreground">
+                {{ numero(l.cantidad) }} {{ l.unidad_medida }} × {{ cop(l.precio_unitario) }}
+                @if (l.precio_pactado) { · Lista: {{ cop(l.precio_lista) }} }
+                · IVA {{ cop(l.valor_iva) }} ({{ numero(l.tarifa_iva) }} %)
+              </p>
+              <p class="text-end font-medium tabular-nums">{{ cop(l.total_linea) }}</p>
+            </li>
+          }
+        </ul>
+      } @else {
+      <div class="relative overflow-x-auto">
         <table class="w-full text-left">
           <caption class="sr-only">Líneas de la venta</caption>
           <thead class="text-xs text-muted-foreground">
@@ -89,6 +110,7 @@ import { chipEstadoPago, etiquetaMetodo, etiquetaTipoVenta } from './ventas.form
           </tbody>
         </table>
       </div>
+      }
 
       <dl class="ms-auto max-w-xs space-y-1">
         <div class="flex justify-between"><dt>Subtotal</dt><dd class="tabular-nums">{{ cop(v.subtotal_venta) }}</dd></div>
@@ -114,6 +136,7 @@ import { chipEstadoPago, etiquetaMetodo, etiquetaTipoVenta } from './ventas.form
 })
 export class VentaResumenComponent {
   readonly detalle = input.required<VentaDetalle>();
+  protected readonly movil = inject(EsMovilService).movil;
 
   protected readonly cop = formatoCop;
   protected readonly numero = formatoNumero;

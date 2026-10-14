@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, contentChildren, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, contentChildren, inject, input, output } from '@angular/core';
 import { PAGE_SIZE_OPTIONS, Page } from '../../../core/api/page.models';
+import { EsMovilService } from '../../services/es-movil.service';
 import { DataTableCellDirective } from '../data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../data-table/data-table.models';
 import { IconComponent } from '../icon/icon.component';
@@ -40,6 +41,20 @@ export class ServerDataTableComponent<T> {
   readonly reintentar = output<void>();
 
   private readonly cellTemplates = contentChildren(DataTableCellDirective);
+  protected readonly movil = inject(EsMovilService).movil;
+
+  // ---- Phone cards: heading column, detail columns (minus the hidden ones) and the actions column ----
+  protected readonly colTitulo = computed(() => {
+    const cols = this.columns();
+    return cols.find((c) => c.rol === 'titulo') ?? cols.find((c) => c.rol !== 'acciones' && c.key !== 'acciones') ?? null;
+  });
+  protected readonly colAcciones = computed(() => this.columns().find((c) => c.rol === 'acciones' || c.key === 'acciones') ?? null);
+  protected readonly colDetalle = computed(() => {
+    const titulo = this.colTitulo();
+    const acciones = this.colAcciones();
+    return this.columns().filter((c) => c !== titulo && c !== acciones && !c.ocultarEnMovil);
+  });
+  protected readonly colOrdenables = computed(() => this.columns().filter((c) => c.sortable !== false && c.key !== 'acciones'));
 
   protected readonly tamanos = PAGE_SIZE_OPTIONS;
   protected readonly filasSkeleton = FILAS_SKELETON;
@@ -69,6 +84,23 @@ export class ServerDataTableComponent<T> {
   protected iconoOrden(column: DataTableColumn<T>) {
     if (this.sortCampo() !== column.key) return 'lucideChevronsUpDown' as const;
     return this.sortDir() === 'asc' ? ('lucideChevronUp' as const) : ('lucideChevronDown' as const);
+  }
+
+  /** Phone sort control: the chosen column keeps the current direction. */
+  protected ordenarPor(key: string): void {
+    this.sortChange.emit(`${key},${this.sortDir()}`);
+  }
+
+  protected invertirOrden(): void {
+    this.sortChange.emit(`${this.sortCampo() ?? this.colOrdenables()[0]?.key},${this.sortDir() === 'asc' ? 'desc' : 'asc'}`);
+  }
+
+  protected campoOrden(): string {
+    return this.sortCampo() ?? '';
+  }
+
+  protected direccionOrden(): string {
+    return this.sortDir();
   }
 
   protected ordenar(column: DataTableColumn<T>): void {

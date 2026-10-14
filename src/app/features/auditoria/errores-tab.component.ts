@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -12,7 +13,7 @@ import type { ErrorAuditoria } from './models/auditoria.models';
 @Component({
   selector: 'app-errores-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
   templateUrl: './errores-tab.component.html',
 })
 export class ErroresTabComponent {

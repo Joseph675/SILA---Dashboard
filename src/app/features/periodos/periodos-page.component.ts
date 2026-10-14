@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
@@ -32,7 +33,7 @@ function pendiente(estado: string): boolean {
 @Component({
   selector: 'app-periodos-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [FiltrosPlegablesComponent, 
     ConfirmDialogComponent,
     CrearAnioDialogComponent,
     DataTableCellDirective,

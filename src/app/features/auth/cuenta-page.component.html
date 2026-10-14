@@ -1,8 +1,8 @@
 <app-page-header title="Mi cuenta" description="Tus datos de acceso y la seguridad de tu cuenta." />
 
 @if (sesion(); as s) {
-  <div class="grid gap-6 lg:grid-cols-2">
-    <section class="sila-card p-5" aria-labelledby="cuenta-datos">
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <section class="sila-card min-w-0 p-5" aria-labelledby="cuenta-datos">
       <div class="mb-4 flex items-center justify-between gap-2">
         <h2 id="cuenta-datos" class="text-base font-semibold">Mis datos</h2>
         @if (!editando()) {
@@ -43,14 +43,14 @@
       }
     </section>
 
-    <section class="sila-card p-5" aria-labelledby="cuenta-clave">
+    <section class="sila-card min-w-0 p-5" aria-labelledby="cuenta-clave">
       <h2 id="cuenta-clave" class="mb-1 text-base font-semibold">Cambiar mi clave</h2>
       <p class="mb-4 text-sm text-muted-foreground">Al cambiarla se cerrarán todas tus sesiones y tendrás que ingresar de nuevo.</p>
       <app-cambiar-clave-form textoBoton="Cambiar mi clave" [pedirCodigo]="true" [errorCodigo]="errorCodigoClave()" [ocupado]="cambiandoClave()" [error]="errorClave()" (cambiar)="cambiarClave($event)" />
     </section>
 
     @if (!s.mfa_activo) {
-      <section class="sila-card p-5 lg:col-span-2" aria-labelledby="cuenta-mfa">
+      <section class="sila-card min-w-0 p-5 lg:col-span-2" aria-labelledby="cuenta-mfa">
         <h2 id="cuenta-mfa" class="mb-1 text-base font-semibold">Segundo factor (opcional)</h2>
         <p class="mb-4 text-sm text-muted-foreground">Un código que genera tu celular protege tu cuenta aunque alguien conozca tu clave.</p>
         @if (!mfaConfig() && !preparandoMfa()) {
@@ -68,7 +68,7 @@
         }
       </section>
     } @else {
-      <section class="sila-card p-5 lg:col-span-2" aria-labelledby="cuenta-respaldo">
+      <section class="sila-card min-w-0 p-5 lg:col-span-2" aria-labelledby="cuenta-respaldo">
         <h2 id="cuenta-respaldo" class="mb-1 text-base font-semibold">Códigos de respaldo</h2>
         <p class="mb-4 text-sm text-muted-foreground">
           Sirven para entrar si pierdes tu teléfono. Cada uno se puede usar una sola vez.
@@ -90,7 +90,7 @@
       </section>
     }
 
-    <section class="sila-card p-5 lg:col-span-2" aria-labelledby="cuenta-sesiones">
+    <section class="sila-card min-w-0 p-5 lg:col-span-2" aria-labelledby="cuenta-sesiones">
       <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="cuenta-sesiones" class="mb-1 text-base font-semibold">Mis sesiones</h2>

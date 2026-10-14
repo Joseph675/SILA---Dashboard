@@ -87,7 +87,7 @@ import { PagosTablaComponent } from './pagos-tabla.component';
       @if (detalle(); as d) {
         <h3 class="mb-2 text-sm font-semibold">Sus quincenas</h3>
         @if (quincenas.hasValue()) {
-          <div class="mb-6 overflow-x-auto">
+          <div class="relative mb-6 overflow-x-auto">
             <table class="w-full text-left text-sm">
               <caption class="sr-only">Quincenas de {{ d.proveedor }}</caption>
               <thead class="text-xs text-muted-foreground">

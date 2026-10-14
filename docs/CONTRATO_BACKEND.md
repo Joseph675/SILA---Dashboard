@@ -70,7 +70,7 @@ Si se pierde el teléfono, no hace falta que otro ADMIN lo restablezca: al **act
 Cada inicio de sesión abre una **sesión** (con su IP, navegador y fecha). Cerrar una sesión —con `logout`, `DELETE /auth/sesiones/{familia}`, «cerrar otras/todas», cambiar la clave, o que un ADMIN la cierre o desactive a la persona— **corta también su token de acceso en segundos** (no hay que esperar los 15 minutos): la siguiente llamada con ese token da `401` / `20013`, el `refresh` también, y el dashboard debe llevar al login con un aviso («Tu sesión fue cerrada»). El campo `actual` marca desde cuál se está pidiendo la lista.
 
 - **Claves:** mínimo 12 caracteres, máximo 72 bytes, distinta de la actual, sin el nombre de usuario ni palabras obvias (`password`, `llanolat`…). Incumplir → `400` / `20001` con el motivo en `message`.
-- **Errores del login** (el mensaje es el mismo para «usuario inexistente», «clave incorrecta» y «cuenta desactivada», para no revelar quién existe): `401` / `20013`. **5 fallos seguidos** (clave o código MFA) bloquean la cuenta 15 minutos → `423` / `20014` con los minutos restantes en `message` (aunque luego se escriba la clave correcta). Más de 10 intentos por minuto por usuario e IP, o 30 por IP → `429` / `20015`.
+- **Errores del login** (el mensaje es el mismo para «usuario inexistente», «clave incorrecta» y «cuenta desactivada», para no revelar quién existe): `401` / `20013`. **5 fallos seguidos** (clave o código MFA) bloquean la cuenta 15 minutos (aunque luego se escriba la clave correcta). **En el login el bloqueo NO se revela**: responde el mismo `401` / `20013` que una clave mala (mensaje «Usuario o clave incorrectos. Si el problema continua, contacte al administrador.»); solo los pasos de MFA y las acciones con código devuelven `423` / `20014` con los minutos restantes en `message`. Más de 10 intentos por minuto por usuario e IP, o 30 por IP → `429` / `20015`.
 - **Códigos MFA:** TOTP estándar (Google/Microsoft Authenticator, Authy), 6 dígitos, 30 s, con un paso de tolerancia. Un código **no se puede reutilizar** (`401`: «Ese codigo ya fue usado»).
 - **Sesión caducada en el dashboard:** al recibir `401` / `20013` con un token de acceso vencido, llamar **una vez** a `/auth/refresh` y reintentar; si también da 401, ir a la pantalla de login.
 - Los endpoints de cookie (`/refresh`, `/logout`) rechazan con `403` un `Origin` que no sea el del dashboard (defensa contra CSRF).
@@ -433,3 +433,85 @@ Dos miradas distintas, que la pantalla debe rotular sin mezclar:
 - **Resultado (devengado)** = `resultado_estimado` = ingresos_ventas − costo_produccion − gastos_operativos − cartera_castigada. Es lo que la quincena ganó, se haya cobrado o pagado o no.
 - **Caja** = `caja_neta`. Es la plata que realmente entró y salió.
 `leche_comprada` NO resta en el resultado (el costo de la leche entra por `costo_produccion`, al producir); se muestra aparte para saber cuánto se debe a los lecheros.
+
+## Insumos, recetas y costo del lote
+
+Los **insumos** (azúcar, envases…) tienen stock y **costo promedio ponderado**: cada compra lo recalcula. Cada producto puede
+tener una **receta**: cuánto de cada insumo gasta UNA unidad del producto, en la unidad del insumo. Al registrar un lote, el
+backend descuenta los insumos de la receta (si falta stock responde 409/20002 con el nombre del insumo y no crea nada) y suma su
+costo al del lote: `costo_total = costo_leche + costo_insumos`. El costo queda congelado en el lote aunque el precio cambie después.
+
+Roles: crear/editar/activar insumos, **comprar**, **anular compras**, corregir stock y **definir recetas** = ADMIN.
+`MERMA`, `DANO`, `VENCIMIENTO` = OPERATIVO. Registrar lotes sigue siendo OPERATIVO. `Idempotency-Key` obligatoria en
+`POST /insumos/compras` y `POST /insumos/ajustes`.
+
+| Método | Ruta | Rol | Qué hace |
+|---|---|---|---|
+| GET | `/insumos` | todos | `Page<Insumo>`; filtros `texto`, `activo`, `bajo_minimo=true`; sort: `codigo, nombre, stock_actual, costo_promedio, valor_inventario` |
+| GET | `/insumos/resumen` | todos | `{total_insumos, bajo_minimo, valor_total}` (solo activos) |
+| GET | `/insumos/{id}` | todos | un insumo |
+| POST | `/insumos` | ADMIN | `{codigo, nombre, unidad_medida, stock_minimo}` → 201. Nace con stock 0 y costo 0 |
+| PUT | `/insumos/{id}` | ADMIN | `{nombre, unidad_medida, stock_minimo}`; la unidad no cambia si ya tiene movimientos o está en recetas (409/20006) |
+| PATCH | `/insumos/{id}/estado` | ADMIN | `{activo}`; no se desactiva si está en la receta de un producto activo (409/20006) |
+| GET | `/insumos/compras` | todos | `Page<Compra>`; filtros `id_insumo, id_proveedor, estado (VIGENTE/ANULADA), desde, hasta` |
+| POST | `/insumos/compras` | ADMIN | `{id_insumo, id_proveedor?, cantidad, valor_total, referencia?, fecha?}` → 201. `valor_total` es lo de la factura; el costo unitario se calcula. El proveedor, si va, debe ser tipo INSUMOS |
+| POST | `/insumos/compras/{id}/anular` | ADMIN | `{motivo}` (10–255). Solo si el stock alcanza para devolver lo comprado (409/20002) |
+| GET | `/insumos/ajustes` | todos | `Page<AjusteInsumo>`; filtros `id_insumo, tipo_ajuste, desde, hasta` |
+| POST | `/insumos/ajustes` | ver arriba | `{id_insumo, tipo_ajuste, cantidad, observacion}`; `cantidad` siempre positiva. Tipos: `MERMA, DANO, VENCIMIENTO` (restan, OPERATIVO), `CORRECCION_MAS, CORRECCION_MENOS` (ADMIN → si no, 403/20008) |
+| GET | `/insumos/consumos?id_lote=` | todos | lista (no paginada) de lo que gastó el lote, con costo congelado |
+| GET | `/catalogos/productos/{id}/receta` | todos | `Receta` (ver abajo) |
+| PUT | `/catalogos/productos/{id}/receta` | ADMIN | `{"lineas":[{"id_insumo":1,"cantidad":0.5}]}` reemplaza la receta completa; `[]` la vacía. Duplicados → 400, insumo inexistente → 404 |
+| POST | `/catalogos/productos` | ADMIN | ahora acepta `receta` opcional (`[{id_insumo, cantidad}]`). Son dos pasos en la base: si la receta falla, **el producto ya existe** y el mensaje lo dice; corregir con el PUT |
+
+```jsonc
+// Insumo
+{ "id_insumo": 1, "codigo": "AZUCAR", "nombre": "Azúcar", "unidad_medida": "KG", "costo_promedio": 5000,
+  "stock_actual": 20, "stock_minimo": 5, "valor_inventario": 100000, "bajo_minimo": false,
+  "productos_que_lo_usan": 2, "activo": true, "fecha_creacion": "...", "usuario_creacion": "..." }
+
+// Receta (GET/PUT /catalogos/productos/{id}/receta)
+{ "id_producto": 7, "codigo_sku": "AREQUIPE", "producto": "Arequipe 250 g",
+  "lineas": [ { "id_insumo": 1, "codigo_insumo": "AZUCAR", "insumo": "Azúcar", "unidad_insumo": "KG",
+                "cantidad_por_unidad": 0.5, "costo_unitario_insumo": 5000, "valor_por_unidad": 2500,
+                "stock_insumo": 20, "insumo_activo": true } ],
+  "costo_insumos_unitario": 2700,   // lo que cuestan los insumos de UNA unidad (al costo promedio de hoy)
+  "unidades_posibles": 40 }         // cuántas unidades alcanza a producir el stock actual (null si no hay receta)
+```
+
+Cambios en respuestas existentes:
+- **Lote** (`/produccion/lotes`): campos nuevos `costo_insumos` y `costo_leche`; `costo_total` = suma de ambos.
+- **Período** (`/periodos`): campo nuevo `compras_insumos` (compras vigentes de la quincena). **`caja_neta` ahora también resta las compras de insumos**
+  (se asume que se pagan al comprar). El resultado devengado no cambia de fórmula: los insumos entran por `costo_produccion` al producir.
+- Códigos: falta de stock de un insumo al producir = `409` / `20002`, con mensaje «Falta <insumo>: se necesitan X y hay Y.».
+
+## Gastos operativos y documentos
+
+Todo bajo `/api/v1`. JSON snake_case, fechas `yyyy-MM-dd`, `fecha_registro`/`fecha_carga` en UTC sin zona.
+
+### Gastos — `/finanzas/gastos`
+| Método | Ruta | Rol | Notas |
+|---|---|---|---|
+| GET | `/finanzas/gastos` | cualquiera | `Page<Gasto>` (incluye anulados). Filtros: `id_periodo`, `id_categoria`, `texto` (concepto, sin tildes), `estado` (VIGENTE/ANULADO), `desde`, `hasta`. Orden: `id_gasto`, `fecha_gasto` (defecto desc), `categoria`, `monto`, `concepto`, `fecha_registro` |
+| GET | `/finanzas/gastos/resumen` | cualquiera | `{total, cantidad}` de los gastos **VIGENTES** con los mismos filtros (sin paginación; los anulados no suman) |
+| GET | `/finanzas/gastos/por-categoria` | cualquiera | lo que antes era `GET /finanzas/gastos` (lista simple por quincena y categoría; `id_periodo` opcional) |
+| GET | `/finanzas/gastos/{id}` | cualquiera | 404/20007 si no existe |
+| POST | `/finanzas/gastos/{id}/anular` | ADMIN | **`Idempotency-Key` obligatoria.** `{motivo (10-255)}` → 200 con el `Gasto` en estado ANULADO. 404/20007, 409/20010 si ya estaba anulado, 409/20004 si su quincena está cerrada |
+| POST | `/finanzas/gastos` | OPERATIVO+ | **`Idempotency-Key` obligatoria.** Cuerpo `{id_categoria, concepto (3-255), monto (>0, 2 decimales), fecha_gasto?}`; sin fecha = hoy en Colombia (no futura). 201 con el `Gasto` |
+
+`Gasto`: `id_gasto, id_periodo, anio, mes, quincena, id_categoria, categoria, fecha_gasto, concepto, monto, usuario_registro, fecha_registro, estado (VIGENTE|ANULADO), motivo_anulacion, usuario_anulacion, fecha_anulacion`.
+Errores: 404/20007 categoría inexistente, 409/20006 categoría inactiva, 409/20004 quincena cerrada. **Un gasto no se edita ni se borra**
+(la base lo impide): si se digitó mal, ADMIN lo **anula** con motivo y se registra el correcto. Un gasto anulado deja de sumar en `/finanzas/gastos/resumen`, `/por-categoria`,
+`GET /periodos` (resultado y caja) y se conserva en la lista con su motivo.
+
+### Documentos (cola de Google Drive) — `/documentos`
+El backend solo lleva el registro y el estado; la subida real a Drive la hace quien llama y reporta el resultado.
+| Método | Ruta | Rol | Notas |
+|---|---|---|---|
+| GET | `/documentos` | cualquiera | `Page<Documento>`. Filtros: `tipo_entidad`, `id_entidad`, `estado_carga` (PENDIENTE/SUBIDO/ERROR). Orden: `id_documento`, `tipo_entidad`, `nombre_archivo`, `estado_carga`, `fecha_registro` (defecto desc), `fecha_carga` |
+| GET | `/documentos/pendientes` | cualquiera | cola PENDIENTE+ERROR sin paginar (`?estado=`) |
+| GET | `/documentos/{id}` | cualquiera | 404/20007 |
+| POST | `/documentos` | OPERATIVO+ | `{tipo_entidad: FACTURA|NOTA_CREDITO|RECEPCION_LECHE, id_entidad, nombre_archivo, mime_type?}` (defecto `application/pdf`). 201 PENDIENTE. 404/20007 si la entidad no existe |
+| POST | `/documentos/{id}/subido` | OPERATIVO+ | `{drive_file_id, drive_url?, checksum_sha256? (64 hex)}` → SUBIDO. 409/20010 si ya estaba subido |
+| POST | `/documentos/{id}/error` | OPERATIVO+ | `{mensaje}` → ERROR, suma un intento; sigue en la cola. 409/20010 si ya estaba subido |
+
+Las tres escrituras exigen `Idempotency-Key`. `Documento`: `id_documento, tipo_entidad, id_entidad, nombre_archivo, mime_type, drive_url, checksum_sha256, estado_carga, intentos, ultimo_error, usuario_carga, fecha_registro, fecha_carga`.

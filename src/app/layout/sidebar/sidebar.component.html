@@ -5,7 +5,7 @@
 ></div>
 
 <aside
-  class="sila-sidebar-aside h-screen border-e border-sidebar-border bg-sidebar"
+  class="sila-sidebar-aside h-dvh border-e border-sidebar-border bg-sidebar"
   [class.sila-sidebar-collapsed]="sidebarState.collapsed()"
   [class.sila-sidebar-open]="sidebarState.mobileOpen()"
 >
@@ -20,7 +20,7 @@
     <button
       type="button"
       class="ms-auto flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/50 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
-      aria-label="Cerrar menú"
+      aria-label="Cerrar menú" 
       (click)="sidebarState.closeMobile()"
     >
       <app-icon name="lucideX" class="h-4 w-4" />

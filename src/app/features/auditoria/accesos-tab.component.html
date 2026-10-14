@@ -1,4 +1,4 @@
-<div class="mb-2 flex flex-wrap items-end gap-3">
+<app-filtros-plegables clases="mb-2 flex flex-wrap items-end gap-3">
   <div class="w-full sm:w-56">
     <label for="accesos-usuario" class="mb-1 block text-xs font-medium text-muted-foreground">Usuario</label>
     <input id="accesos-usuario" type="search" class="sila-input" placeholder="Contiene…" maxlength="100" [value]="usuario.crudo()" (input)="usuario.crudo.set($any($event.target).value)" />
@@ -17,7 +17,7 @@
     <input id="accesos-ip" type="search" class="sila-input w-40 font-mono" maxlength="45" [value]="ip.crudo()" (input)="ip.crudo.set($any($event.target).value)" />
   </div>
   <app-filtro-fechas idBase="accesos" [desde]="desde()" [hasta]="hasta()" (desdeChange)="desde.set($event)" (hastaChange)="hasta.set($event)" />
-</div>
+</app-filtros-plegables>
 <p class="mb-3 text-xs text-muted-foreground">Las fechas del filtro son días en UTC; las horas de la tabla están en hora de Colombia (UTC−5).</p>
 
 <div class="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Atajos">

@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
@@ -24,7 +25,7 @@ const VENTANAS = [7, 15, 30] as const;
 @Component({
   selector: 'app-inventario-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [AjusteDialogComponent, DataTableCellDirective, IconComponent, PageHeaderComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [FiltrosPlegablesComponent, AjusteDialogComponent, DataTableCellDirective, IconComponent, PageHeaderComponent, ServerDataTableComponent, StatusChipComponent],
   template: `
     <app-page-header title="Inventario" description="Stock actual de los productos activos y los lotes que están por vencer." />
 
@@ -52,7 +53,7 @@ const VENTANAS = [7, 15, 30] as const;
     }
 
     <h2 class="mb-3 text-base font-semibold">Stock por producto</h2>
-    <div class="mb-4 flex flex-wrap items-end gap-3">
+    <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
         <label for="inventario-texto" class="mb-1 block text-xs font-medium text-muted-foreground">Nombre o SKU</label>
         <input id="inventario-texto" type="search" class="sila-input" placeholder="Buscar…" maxlength="100" [value]="texto.crudo()" (input)="texto.crudo.set($any($event.target).value)" />
@@ -61,7 +62,7 @@ const VENTANAS = [7, 15, 30] as const;
         <input type="checkbox" class="size-4" [checked]="soloConStock()" (change)="soloConStock.set($any($event.target).checked)" />
         Solo con stock
       </label>
-    </div>
+    </app-filtros-plegables>
 
     <app-server-data-table
       titulo="Stock por producto"

@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
+import { EsMovilService } from '../../services/es-movil.service';
 import type { SesionAbierta } from '../../../core/auth/auth.models';
 import { describirDispositivo } from '../../utils/dispositivo';
 import { formatoFechaHora } from '../../utils/formato-co';
@@ -23,8 +24,35 @@ import { StatusChipComponent } from '../status-chip/status-chip.component';
       <p class="text-sm text-muted-foreground" role="status">Cargando sesiones…</p>
     } @else if (sesiones()?.length === 0) {
       <p class="text-sm text-muted-foreground">No hay sesiones abiertas.</p>
+    } @else if (movil()) {
+      <ul class="divide-y divide-border" aria-label="Sesiones abiertas">
+        @for (sesion of sesiones(); track sesion.familia) {
+          <li class="min-w-0 space-y-2 py-3">
+            <p class="flex flex-wrap items-center gap-2">
+              <span class="font-medium" [attr.title]="sesion.user_agent">{{ dispositivo(sesion.user_agent) }}</span>
+              @if (sesion.actual) {
+                <app-status-chip texto="Esta sesión" tono="info" />
+              }
+            </p>
+            <dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
+              <dt class="text-muted-foreground">IP</dt>
+              <dd class="break-all text-end font-mono text-xs">{{ sesion.ip }}</dd>
+              <dt class="text-muted-foreground">Iniciada</dt>
+              <dd class="text-end">{{ fechaHora(sesion.iniciada) }}</dd>
+              <dt class="text-muted-foreground">Última actividad</dt>
+              <dd class="text-end">{{ fechaHora(sesion.ultima_actividad) }}</dd>
+            </dl>
+            @if (permitirCerrar()) {
+              <button type="button" class="sila-btn sila-btn-outline w-full" [disabled]="ocupado()" (click)="cerrar.emit(sesion)">
+                <app-icon name="lucideLogOut" class="size-4" aria-hidden="true" />
+                Cerrar esta sesión<span class="sr-only"> ({{ dispositivo(sesion.user_agent) }})</span>
+              </button>
+            }
+          </li>
+        }
+      </ul>
     } @else {
-      <div class="overflow-x-auto">
+      <div class="relative overflow-x-auto">
         <table class="w-full text-sm">
           <caption class="sr-only">Sesiones abiertas</caption>
           <thead>
@@ -78,6 +106,7 @@ export class SesionesListaComponent {
   readonly cerrar = output<SesionAbierta>();
   readonly reintentar = output<void>();
 
+  protected readonly movil = inject(EsMovilService).movil;
   protected readonly dispositivo = describirDispositivo;
   protected readonly fechaHora = formatoFechaHora;
 }

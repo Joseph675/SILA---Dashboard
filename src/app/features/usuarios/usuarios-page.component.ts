@@ -1,3 +1,4 @@
+import { FiltrosPlegablesComponent } from '../../shared/ui/filtros-plegables/filtros-plegables.component';
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime, distinctUntilChanged, map } from 'rxjs';
@@ -36,7 +37,7 @@ const MOTIVO_PROPIA_CUENTA = 'No puedes hacer esto sobre tu propia cuenta: lo ha
 @Component({
   selector: 'app-usuarios-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
+  imports: [FiltrosPlegablesComponent, 
     ClaveTemporalDialogComponent,
     ConfirmDialogComponent,
     DataTableCellDirective,
