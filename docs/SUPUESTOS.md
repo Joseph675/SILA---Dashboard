@@ -177,3 +177,15 @@ Decisiones tomadas donde `prompt.md` no fija la regla. En el código cada una ll
 | CO-07 | «Ver comprobante» en Ventas (fila y detalle), Abonos (una vez por recibo: el id es el `id_recibo`), «Cuánto le debo» (pagos), Compras de insumos y Gastos. El abono recién registrado en el diálogo de cobro no trae el enlace. | `ver-comprobante.component.ts` |
 | CO-08 | Impresión: el comprobante lleva el nombre de la empresa y «Comprobante interno — no es factura electrónica». Se corrigió el CSS compartido de `.zona-impresion-ticket` (también el ticket de ventas): el diálogo ya no recorta el documento, lo que no se imprime no ocupa lugar (antes salía una página en blanco) y los botones no se alcanzan a ver por su transición. | `src/styles.css` |
 
+## Tablero
+
+| ID | Supuesto | Dónde |
+|---|---|---|
+| TB-01 | Solo repositorio HTTP (el proyecto no tiene mocks: las pruebas usan fakes). `/` y `**` redirigen a `/tablero`; el enlace «Dashboard» de las migas de pan también. | `app.routes.ts`, `page-header.component.ts` |
+| TB-02 | Refresco: al entrar, cada 2 minutos mientras `document.hidden` sea falso (no se pide con la pestaña oculta) y, al volver a verla, de inmediato si pasaron 2 minutos o más. «Actualizar» no pide mientras hay una carga en curso. La hora «Actualizado a las» (horario de Colombia) se marca cuando LLEGAN las cifras. | `tablero-page.component.ts` |
+| TB-03 | Si un refresco falla se conservan las cifras anteriores con un aviso y «Reintentar»; si falla la primera carga, error con «Reintentar». | `tablero-page.component.ts` |
+| TB-04 | Pesos sin decimales en todo el Tablero (`$ 423.114`, negativo `-$ 406.843`); litros con `formatoNumero` (hasta 2 decimales: el backend manda `1315.5`). El neto/resultado negativo va en rojo y con su signo. | `tablero.format.ts` |
+| TB-05 | «Ventas de hoy» = `ventas_total` (con IVA) con el contado y el crédito debajo; «Vendido / cobrado» muestra `total_vendido` y `total_cobrado` (no `ingresos_ventas`). «Resultado estimado» se rotula solo «Estimado de la quincena»: el contrato no da su fórmula. | `tablero-page.component.ts` |
+| TB-06 | Destinos: Cartera → `/cartera`; Inventario → `/inventario` y `/insumos`; Lecheros → `/acopio?pestana=lecheros` («Cuánto le debo», donde están los saldos y los pagos). «Ver todas (N)» → `/notificaciones`; cada alerta abre su módulo con la misma lógica de la campana. El enlace a períodos (`/periodos`, `/periodos/{id}`) solo se ofrece al ADMIN; las cifras son iguales para los dos roles. | `tablero-page.component.ts` |
+| TB-07 | Gráfica de 7 barras con ApexCharts; el día 0 se dibuja (sin altura) y la última barra se llama «Hoy». Las etiquetas del eje van en dos líneas (`mié` / `14`) para que quepan en el teléfono. Los mismos datos van en una tabla solo para lectores de pantalla. | `ventas-semana-chart.component.ts` |
+| TB-08 | En pruebas unitarias la gráfica de Apex no se monta (necesita `matchMedia` y SVG reales): se prueba su tabla de datos, el mapeo (`datosGrafica`) y, en navegador real, las 7 barras y el tooltip. | `tablero.spec.ts` |

@@ -19,7 +19,11 @@ export const routes: Routes = [
     component: DashboardShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'catalogos' },
+      { path: '', pathMatch: 'full', redirectTo: 'tablero' },
+      {
+        path: 'tablero',
+        loadChildren: () => import('./features/tablero/tablero.routes').then((m) => m.TABLERO_ROUTES),
+      },
       {
         path: 'catalogos',
         loadChildren: () => import('./features/catalogos/catalogos.routes').then((m) => m.CATALOGOS_ROUTES),
@@ -89,7 +93,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/cuenta-page.component').then((m) => m.CuentaPageComponent),
         title: 'Mi cuenta · SILA',
       },
-      { path: '**', redirectTo: 'catalogos' },
+      { path: '**', redirectTo: 'tablero' },
     ],
   },
 ];

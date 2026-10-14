@@ -26,7 +26,7 @@ export interface SidebarNavGroup {
 export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
   {
     label: 'Inicio',
-    items: [{ label: 'Tablero', icon: 'lucideLayoutDashboard' }],
+    items: [{ label: 'Tablero', icon: 'lucideLayoutDashboard', route: '/tablero' }],
   },
   {
     label: 'Ventas y cobros',

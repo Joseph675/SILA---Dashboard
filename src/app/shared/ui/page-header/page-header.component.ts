@@ -15,7 +15,7 @@ import { IconComponent } from '../icon/icon.component';
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="min-w-0 space-y-1">
         <nav class="flex items-center gap-1.5 text-sm text-muted-foreground max-lg:-my-2" aria-label="Breadcrumb">
-          <a routerLink="/dashboard" class="transition-colors hover:text-foreground max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">Dashboard</a>
+          <a routerLink="/tablero" class="transition-colors hover:text-foreground max-lg:inline-flex max-lg:min-h-11 max-lg:items-center">Dashboard</a>
           <app-icon name="lucideChevronRight" class="size-3.5" />
           <span class="font-medium text-foreground">{{ title() }}</span>
         </nav>
