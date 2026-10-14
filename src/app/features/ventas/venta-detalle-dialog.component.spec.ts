@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { of } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
@@ -24,7 +25,7 @@ describe('VentaDetalleDialogComponent · anular', () => {
   });
 
   async function crear(rol: Rol, estado = 'PAGADA'): Promise<ComponentFixture<VentaDetalleDialogComponent>> {
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), { provide: VENTAS_REPOSITORY, useValue: { detalle: vi.fn(() => of(detalle(estado))) } }] });
+    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: VENTAS_REPOSITORY, useValue: { detalle: vi.fn(() => of(detalle(estado))) } }] });
     TestBed.inject(AuthService).sesion.set({ id_usuario: 1, usuario: 'prueba', nombre: 'Prueba', email: 'p@example.com', rol, mfa_activo: false });
     const fixture = TestBed.createComponent(VentaDetalleDialogComponent);
     fixture.componentRef.setInput('idVenta', 12);

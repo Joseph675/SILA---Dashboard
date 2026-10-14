@@ -9,6 +9,7 @@ import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { ToastService } from '../../shared/ui/toast/toast.service';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
 import { imprimirTicket } from '../../shared/utils/imprimir';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { VENTAS_REPOSITORY } from './data/ventas.provider';
 import { VentaResumenComponent } from './venta-resumen.component';
 
@@ -16,7 +17,7 @@ import { VentaResumenComponent } from './venta-resumen.component';
 @Component({
   selector: 'app-venta-detalle-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, DialogComponent, HasRoleDirective, IconComponent, VentaResumenComponent],
+  imports: [ConfirmDialogComponent, DialogComponent, HasRoleDirective, IconComponent, VentaResumenComponent, VerComprobanteComponent],
   template: `
     <app-dialog [open]="idVenta() !== null" [title]="'Venta N.º ' + (idVenta() ?? '')" [wide]="true" (closed)="cerrar.emit()">
       @if (detalle.error()) {
@@ -32,6 +33,9 @@ import { VentaResumenComponent } from './venta-resumen.component';
       <div dialogFooter class="flex flex-wrap gap-2">
         @if (puedeAnular()) {
           <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline text-destructive" (click)="confirmando.set(true)">Anular venta</button>
+        }
+        @if (idVenta() !== null) {
+          <app-ver-comprobante tipo="VENTA" [id]="idVenta()!" />
         }
         <button type="button" class="sila-btn sila-btn-outline" [disabled]="!detalle.hasValue()" (click)="imprimir()">
           <app-icon name="lucidePrinter" class="size-4" aria-hidden="true" />

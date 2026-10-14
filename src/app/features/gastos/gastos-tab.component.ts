@@ -3,6 +3,7 @@ import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -25,7 +26,7 @@ import type { EstadoGasto, Gasto } from './models/gastos.models';
 @Component({
   selector: 'app-gastos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, GastoDialogComponent, HasRoleDirective, IconComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, GastoDialogComponent, HasRoleDirective, IconComponent, ServerDataTableComponent, StatusChipComponent, VerComprobanteComponent],
   template: `
     <div class="sila-card mb-6 flex flex-wrap items-center justify-between gap-4 p-4" data-testid="resumen-gastos" aria-live="polite">
       <div>
@@ -109,6 +110,7 @@ import type { EstadoGasto, Gasto } from './models/gastos.models';
         }
       </ng-template>
       <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-g>
+        <app-ver-comprobante class="me-2 inline-block" tipo="GASTO" [id]="g.id_gasto" />
         @if (g.estado === 'VIGENTE') {
           <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="anulando.set(g)">Anular<span class="sr-only"> el gasto «{{ g.concepto }}»</span></button>
         }

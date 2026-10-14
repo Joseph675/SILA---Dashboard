@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
 import { HasRoleDirective } from '../../core/auth/has-role.directive';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { ConfirmDialogComponent } from '../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from '../../shared/ui/data-table/data-table-cell.directive';
 import type { DataTableColumn } from '../../shared/ui/data-table/data-table.models';
@@ -21,7 +22,7 @@ import type { PagoProveedor } from './models/acopio.models';
 @Component({
   selector: 'app-pagos-tabla',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ConfirmDialogComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent],
+  imports: [ConfirmDialogComponent, DataTableCellDirective, HasRoleDirective, ServerDataTableComponent, StatusChipComponent, VerComprobanteComponent],
   template: `
     <app-server-data-table
       titulo="Pagos a lecheros"
@@ -56,6 +57,7 @@ import type { PagoProveedor } from './models/acopio.models';
         }
       </ng-template>
       <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-p>
+        <app-ver-comprobante class="me-2 inline-block" tipo="PAGO_LECHERO" [id]="p.id_pago" />
         @if (p.estado === 'VIGENTE') {
           <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="anulando.set(p)">Anular<span class="sr-only"> el pago de {{ p.proveedor }}</span></button>
         }

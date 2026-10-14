@@ -17,6 +17,7 @@ import { formatoCop, formatoFecha, formatoNumero } from '../../shared/utils/form
 import { crearListado } from '../../shared/utils/listado';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { CATALOGOS_REPOSITORY } from '../catalogos/data/catalogos.provider';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { CompraDialogComponent } from './compra-dialog.component';
 import { INSUMOS_REPOSITORY } from './data/insumos.provider';
 import { cargarInsumosActivos } from './insumos-activos';
@@ -25,7 +26,7 @@ import type { Compra, EstadoCompra } from './models/insumos.models';
 @Component({
   selector: 'app-compras-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CompraDialogComponent, ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, HasRoleDirective, IconComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent],
+  imports: [CompraDialogComponent, ConfirmDialogComponent, DataTableCellDirective, FiltroFechasComponent, FiltrosPlegablesComponent, HasRoleDirective, IconComponent, SelectorBuscableComponent, ServerDataTableComponent, StatusChipComponent, VerComprobanteComponent],
   template: `
     <app-filtros-plegables clases="mb-4 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-64">
@@ -77,6 +78,7 @@ import type { Compra, EstadoCompra } from './models/insumos.models';
         }
       </ng-template>
       <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-c>
+        <app-ver-comprobante class="me-2 inline-block" tipo="COMPRA_INSUMO" [id]="c.id_compra" />
         @if (c.estado === 'VIGENTE') {
           <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="anulando.set(c)">Anular<span class="sr-only"> la compra de {{ c.insumo }}</span></button>
         }

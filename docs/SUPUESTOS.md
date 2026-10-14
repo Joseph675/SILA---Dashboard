@@ -163,3 +163,17 @@ Decisiones tomadas donde `prompt.md` no fija la regla. En el código cada una ll
 | SM-03 | La campana refresca al abrirse, al volver a la pestaña y cada 2 minutos; si falla, conserva la última lista sin mostrar error. El punto lleva el número de no vistas (99+) en rojo si alguna es crítica y en ámbar si solo hay advertencias; la severidad también va escrita. | `notificaciones-campana.component.ts` |
 | SM-04 | Destinos: INSUMO → Insumos, PRODUCTO → Inventario, LOTE → Producción (lotes), CLIENTE → Cartera, PERIODO → cuentas de esa quincena (`/periodos/{id}`, solo ADMIN: a un OPERATIVO lo devuelve a Catálogos), DOCUMENTO → Documentos Drive. «Ver todas» abre `/notificaciones`, agrupadas en críticas y advertencias. | `notificaciones.logica.ts` |
 | SM-05 | `GET /inventario` no trae `stock_minimo` ni `bajo_minimo` (el contrato dice que `Producto` sí): la marca «bajo mínimo» está en la tabla de Catálogos → Productos y en Insumos, pero NO en la tabla de Inventario, porque no hay dato que mostrar sin inventarlo. | `productos-tab.component.html` |
+
+## Comprobantes
+
+| ID | Supuesto | Dónde |
+|---|---|---|
+| CO-01 | Sin quincena preseleccionada: a diferencia de Gastos, la pantalla abre con «Todas las quincenas» (el filtro de quincena es opcional y el resumen cubre todo el historial hasta que se elija una). | `comprobantes-page.component.ts` |
+| CO-02 | Los filtros y el detalle abierto viven en la URL (`?tipo=&sentido=&estado=&periodo=&desde=&hasta=&q=&ver=VENTA-123`); un valor inválido se ignora y nunca llega al servidor. Los filtros reemplazan la entrada del historial; abrir un detalle agrega una (Atrás lo cierra). | `comprobantes-page.component.ts`, `comprobantes.format.ts` |
+| CO-03 | El resumen no recibe `estado` (el contrato dice que solo suma vigentes), así que filtrar por «Anulados» deja las tarjetas en lo vigente; la pantalla lo aclara. | `comprobantes-page.component.ts` |
+| CO-04 | `cantidad` y `valor_unitario` de una línea vienen en `null` en abonos, gastos y pagos a lecheros (visto en el API real; el contrato no lo dice): se muestra «—», nunca «$ 0». | `comprobante-detalle-dialog.component.ts` |
+| CO-05 | `numero` llega como `COMPRA_INSUMO #25`; en pantalla el guion bajo se muestra como espacio. El dato no se toca (la búsqueda por texto sigue usando el del servidor). | `comprobantes.format.ts` (`numeroLegible`) |
+| CO-06 | La tabla no tiene clic de fila: el número del comprobante es un botón y cada fila trae «Ver» (se llega con teclado). `fecha` se muestra solo como día (viene como `AAAA-MM-DD`). | `comprobantes-page.component.ts` |
+| CO-07 | «Ver comprobante» en Ventas (fila y detalle), Abonos (una vez por recibo: el id es el `id_recibo`), «Cuánto le debo» (pagos), Compras de insumos y Gastos. El abono recién registrado en el diálogo de cobro no trae el enlace. | `ver-comprobante.component.ts` |
+| CO-08 | Impresión: el comprobante lleva el nombre de la empresa y «Comprobante interno — no es factura electrónica». Se corrigió el CSS compartido de `.zona-impresion-ticket` (también el ticket de ventas): el diálogo ya no recorta el documento, lo que no se imprime no ocupa lugar (antes salía una página en blanco) y los botones no se alcanzan a ver por su transición. | `src/styles.css` |
+

@@ -13,13 +13,14 @@ import { textoConEspera } from '../../shared/utils/texto-debounce';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { VENTAS_REPOSITORY } from './data/ventas.provider';
 import type { EstadoPago, TipoVenta, Venta } from './models/ventas.models';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { VentaDetalleDialogComponent } from './venta-detalle-dialog.component';
 import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
 
 @Component({
   selector: 'app-ventas-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent],
+  imports: [FiltrosPlegablesComponent, DataTableCellDirective, FiltroFechasComponent, IconComponent, PageHeaderComponent, RouterLink, ServerDataTableComponent, StatusChipComponent, VentaDetalleDialogComponent, VerComprobanteComponent],
   template: `
     <app-page-header title="Historial de ventas" description="Consulta las ventas registradas, su detalle y, si eres administrador, anúlalas.">
       <a routerLink="/ventas/nueva" class="sila-btn sila-btn-primary shrink-0">
@@ -89,6 +90,7 @@ import { chipEstadoPago, etiquetaTipoVenta } from './ventas.format';
         <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" (click)="seleccionada.set(v.id_venta)">
           Ver detalle<span class="sr-only"> de la venta {{ v.id_venta }}</span>
         </button>
+        <app-ver-comprobante class="ms-2 inline-block" tipo="VENTA" [id]="v.id_venta" />
       </ng-template>
     </app-server-data-table>
 

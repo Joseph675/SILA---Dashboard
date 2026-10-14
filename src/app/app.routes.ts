@@ -57,6 +57,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/notificaciones/notificaciones.routes').then((m) => m.NOTIFICACIONES_ROUTES),
       },
       {
+        path: 'comprobantes',
+        loadChildren: () => import('./features/comprobantes/comprobantes.routes').then((m) => m.COMPROBANTES_ROUTES),
+      },
+      {
         path: 'gastos',
         loadChildren: () => import('./features/gastos/gastos.routes').then((m) => m.GASTOS_ROUTES),
       },

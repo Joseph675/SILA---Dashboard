@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { of, throwError } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
@@ -50,7 +51,7 @@ describe('Cuentas con los lecheros', () => {
       listarPagos: vi.fn(() => of({ items: [PAGO], total: 1, page: 0, size: 10 })),
       anularPago: vi.fn(() => of({ ...PAGO, estado: 'ANULADO', motivo_anulacion: 'Se pagó dos veces' })),
     };
-    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), { provide: ACOPIO_REPOSITORY, useValue: repo }] });
+    TestBed.configureTestingModule({ providers: [provideNgIconLoader(async () => ''), provideRouter([]), { provide: ACOPIO_REPOSITORY, useValue: repo }] });
   });
 
   it('fijar precio: envía lechero, precio y fecha, y avisa que solo afecta las entregas nuevas', async () => {

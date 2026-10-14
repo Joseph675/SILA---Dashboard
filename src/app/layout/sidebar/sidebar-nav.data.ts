@@ -34,7 +34,7 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
       { label: 'Punto de venta', icon: 'lucideScanBarcode', route: '/ventas/nueva' },
       { label: 'Historial de ventas', icon: 'lucideReceipt', route: '/ventas', exacta: true },
       { label: 'Precios por cliente', icon: 'lucideTags', route: '/precios-cliente', rol: 'ADMIN' },
-      { label: 'Facturación', icon: 'lucideFileText' },
+      { label: 'Comprobantes', icon: 'lucideFileText', route: '/comprobantes' },
       { label: 'Cartera', icon: 'lucideWallet', route: '/cartera' },
     ],
   },

@@ -537,3 +537,54 @@ Las alertas se **calculan al consultar**: no se guardan y desaparecen solas cuan
 **Stock mínimo de productos:** `Producto` ahora trae `stock_minimo` y `bajo_minimo` (boolean; 0 = sin alerta). Se fija con `PATCH /catalogos/productos/{id}/stock-minimo` `{stock_minimo}` (**ADMIN**, 0 a 99.999.999, 3 decimales) o con el campo opcional `stock_minimo` en `POST /catalogos/productos` y `PUT /catalogos/productos/{id}` (en el PUT exige ADMIN solo si el campo viene; `null` = no cambia). Los insumos ya tenían `stock_minimo` y `bajo_minimo`.
 
 **Categoría de gasto INSUMOS desactivada:** las compras de ingredientes y empaques se registran en Insumos (si no, la misma compra se contaba en la caja y en el resultado dos veces). Ya no aparece al registrar gastos.
+
+## Comprobantes
+
+Vista unificada **de solo lectura** de todos los movimientos de plata. **No son facturas DIAN** (no llamarlos «factura» en la pantalla): son el documento interno de cada movimiento. Cualquier usuario autenticado. No hay tabla nueva: sale de `vw_comprobantes`, que une ventas, abonos, pagos a lecheros, compras de insumos y gastos.
+
+`Comprobante = { tipo, id_documento, numero, sentido, afecta_caja, fecha, monto, id_tercero, tercero_tipo, tercero, descripcion, metodo_pago, referencia, estado, motivo_anulacion, id_periodo, usuario_registro }`
+
+- `tipo`: `VENTA` | `ABONO` | `PAGO_LECHERO` | `COMPRA_INSUMO` | `GASTO`. `numero` = `"VENTA #123"` (tipo + `#` + `id_documento`); el abono se numera por **recibo** (un recibo agrupa los abonos de un pago: `ABONO #id_recibo`).
+- `sentido`: `INGRESO` (venta, abono) | `EGRESO` (pago a lechero, compra de insumos, gasto). `afecta_caja`: `false` solo en la venta **a crédito** (la plata entra con los abonos).
+- `estado`: `VIGENTE` | `ANULADO` (con `motivo_anulacion`). `tercero_tipo`: `CLIENTE` | `PROVEEDOR` | null (el gasto no tiene tercero). `metodo_pago` puede ser `VARIOS` (venta de contado con varios medios) o null.
+
+| Endpoint | Detalle |
+|---|---|
+| `GET /comprobantes` | `Page<Comprobante>`. Filtros: `tipo`, `sentido`, `estado`, `id_periodo`, `texto` (número, tercero, descripción o referencia; sin tildes), `desde`, `hasta` (ISO). `sort`: `fecha` (por defecto desc), `monto`, `tipo`, `numero`, `tercero`, `estado`, `sentido`. Valor inválido en `tipo`/`sentido`/`estado`/`sort` → `400`. |
+| `GET /comprobantes/resumen` | `{ ingresos, egresos, neto, cantidad }` con los mismos filtros (menos `estado`): solo **VIGENTES**; los ingresos cuentan solo lo que mueve caja. |
+| `GET /comprobantes/{tipo}/{id}` | `{ comprobante, lineas: [{concepto, cantidad, valor_unitario, valor}], pagos: [{metodo_pago, monto, referencia}], subtotal, iva }` — `subtotal` e `iva` solo en VENTA (null en los demás). Para ABONO el `id` es el `id_recibo`. `404` si no existe, `400` si el tipo es inválido. |
+
+## Tablero
+
+Pantalla de inicio. **Un solo endpoint de solo lectura**, igual para OPERATIVO y ADMIN (los dos ven todas las cifras). No hay tabla ni vista nueva: el backend lee vistas que ya existen (ventas, comprobantes, recepciones, lotes, cartera, inventario, insumos, saldo de lecheros, notificaciones y cuentas de la quincena) en una consulta de indicadores y tres más pequeñas. «Hoy» es el día en Colombia. Las ventas **ANULADAS no suman**.
+
+`GET /tablero` →
+
+```json
+{
+  "fecha": "2026-10-14",
+  "hoy": { "ventas_total": 423114.24, "ventas_cantidad": 12, "ventas_contado": 406000, "ventas_credito": 17114.24,
+           "caja_ingresos": 423114.24, "caja_egresos": 650000, "caja_neta": -226885.76,
+           "litros_recibidos": 300, "litros_rechazados": 20, "lotes_producidos": 2 },
+  "quincena": { "id_periodo": 19, "anio": 2026, "mes": 10, "quincena": 1, "fecha_inicio": "2026-10-01", "fecha_fin": "2026-10-15",
+                "estado": "ABIERTA", "ingresos_ventas": 0, "total_vendido": 0, "total_cobrado": 0, "costo_produccion": 0,
+                "gastos_operativos": 0, "cartera_castigada": 0, "resultado_estimado": 0, "caja_neta": 0,
+                "leche_litros": 0, "leche_por_pagar": 0 },
+  "cartera": { "saldo_total": 0, "saldo_vencido": 0, "clientes_con_saldo": 0, "clientes_en_mora": 0 },
+  "inventario": { "valor_productos": 0, "productos_bajo_minimo": 0, "productos_agotados": 0,
+                  "valor_insumos": 0, "insumos_bajo_minimo": 0, "lotes_por_vencer": 0 },
+  "lecheros": { "saldo_por_pagar": 0, "proveedores_con_saldo": 0 },
+  "alertas": { "total": 3, "criticas": 1, "principales": [ /* Notificacion, máx. 5, críticas primero */ ] },
+  "ventas_semana": [ { "fecha": "2026-10-08", "total": 0, "cantidad": 0 }, "… 7 filas, la última es hoy" ]
+}
+```
+
+- **`hoy.caja_*`**: lo que entró y salió de caja hoy (como `/comprobantes/resumen` del día): la venta a crédito no entra, los abonos sí; los egresos son pagos a lecheros, compras de insumos y gastos. `caja_neta` puede ser negativa.
+- **`hoy.ventas_total`** = `ventas_contado + ventas_credito` (con IVA). `litros_recibidos` son solo los aprobados; los rechazados van aparte.
+- **`quincena`**: la que contiene hoy, con las mismas cifras de `GET /periodos` (`resultado_estimado`, `caja_neta`, `leche_por_pagar`…). Es **`null`** si hoy no cae en ninguna quincena creada: mostrar un aviso («No hay quincena creada para hoy» con enlace a Períodos para el ADMIN).
+- **`cartera`**: `saldo_total` = lo que deben los clientes activos; `saldo_vencido` = saldo de ventas pendientes con vencimiento antes de hoy; `clientes_en_mora` = clientes con estado de crédito `EN_MORA`.
+- **`inventario`**: `valor_productos` a precio de venta (stock × precio base); `valor_insumos` a costo promedio. `lotes_por_vencer` = lotes que vencen en 7 días o menos y aún no vencieron.
+- **`lecheros.saldo_por_pagar`**: lo que se debe a los lecheros en total (histórico, no solo esta quincena; el de la quincena es `quincena.leche_por_pagar`).
+- **`alertas`**: `total` y `criticas` son los mismos de `GET /notificaciones` (la campana); `principales` trae las 5 primeras con el mismo formato.
+- **`ventas_semana`**: siempre 7 filas en orden, de hace 6 días a hoy; los días sin ventas vienen en 0 (sirve directo para una gráfica de barras).
+- Es una foto al momento: refrescar al entrar a la pantalla y, si se quiere, cada 1–2 minutos mientras esté abierta (no más seguido).

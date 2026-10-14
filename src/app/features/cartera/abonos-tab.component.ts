@@ -8,6 +8,7 @@ import { formatoCop, formatoFecha, formatoFechaHora } from '../../shared/utils/f
 import { crearListado } from '../../shared/utils/listado';
 import { FiltroFechasComponent } from '../auditoria/filtro-fechas.component';
 import { METODOS_PAGO, etiquetaMetodo } from '../ventas/ventas.format';
+import { VerComprobanteComponent } from '../comprobantes/ver-comprobante.component';
 import { CARTERA_REPOSITORY } from './data/cartera.provider';
 import type { Abono } from './models/cartera.models';
 import type { MetodoPago } from '../ventas/models/ventas.models';
@@ -15,7 +16,7 @@ import type { MetodoPago } from '../ventas/models/ventas.models';
 @Component({
   selector: 'app-abonos-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FiltrosPlegablesComponent, ClienteSelectorComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent],
+  imports: [FiltrosPlegablesComponent, ClienteSelectorComponent, DataTableCellDirective, FiltroFechasComponent, ServerDataTableComponent, VerComprobanteComponent],
   template: `
     <app-filtros-plegables clases="mb-2 flex flex-wrap items-end gap-3">
       <div class="w-full sm:w-72">
@@ -73,6 +74,12 @@ import type { MetodoPago } from '../ventas/models/ventas.models';
       <ng-template appDataTableCell="id_venta" [cellRows]="listado.datos()?.items" let-a><span class="font-mono text-xs">N.º {{ a.id_venta }}</span></ng-template>
       <ng-template appDataTableCell="monto" [cellRows]="listado.datos()?.items" let-a><span class="font-medium tabular-nums">{{ cop(a.monto) }}</span></ng-template>
       <ng-template appDataTableCell="metodo_pago" [cellRows]="listado.datos()?.items" let-a>{{ metodoTexto(a.metodo_pago) }}</ng-template>
+      <ng-template appDataTableCell="acciones" [cellRows]="listado.datos()?.items" let-a let-i="index">
+        <!-- A receipt groups several abonos: the link is the receipt's, shown once per receipt. -->
+        @if (!comparteConAnterior(i)) {
+          <app-ver-comprobante tipo="ABONO" [id]="a.id_recibo" />
+        }
+      </ng-template>
     </app-server-data-table>
   `,
 })
@@ -120,6 +127,7 @@ export class AbonosTabComponent {
     { key: 'metodo_pago', label: 'Medio', sortable: false, value: (a) => a.metodo_pago },
     { key: 'referencia_pago', label: 'Referencia', sortable: false, value: (a) => a.referencia_pago ?? '—' },
     { key: 'usuario_registro', label: 'Usuario', sortable: false, value: (a) => a.usuario_registro },
+    { key: 'acciones', label: 'Comprobante', sortable: false, rol: 'acciones', value: () => '' },
   ];
   protected readonly abonoId = (a: Abono) => a.id_abono;
 

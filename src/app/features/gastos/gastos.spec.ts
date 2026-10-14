@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideNgIconLoader } from '@ng-icons/core';
 import { of, throwError } from 'rxjs';
 import { AuthService, Rol } from '../../core/services/auth.service';
@@ -51,7 +52,7 @@ describe('Gastos', () => {
     };
     TestBed.configureTestingModule({
       providers: [
-        provideNgIconLoader(async () => ''),
+        provideNgIconLoader(async () => ''), provideRouter([]),
         { provide: GASTOS_REPOSITORY, useValue: repo },
         { provide: PERIODOS_REPOSITORY, useValue: { listar: vi.fn(() => of({ items: [{ id_periodo: 19, anio: 2026, mes: 10, quincena: 1 }], total: 1, page: 0, size: 50 })), actual: vi.fn(() => of({ id_periodo: 19 })) } },
       ],
@@ -95,6 +96,13 @@ describe('Gastos', () => {
     expect(texto(f, '[data-testid=detalle-anulacion]')).toContain('Motivo: Monto equivocado · kevin');
     expect(boton(filas[1], 'Anular')).toBeUndefined();
     expect(boton(filas[0], 'Anular')).toBeTruthy();
+  });
+
+  it('cada gasto trae «Ver comprobante» hacia /comprobantes con su tipo e id', async () => {
+    const f = await tab('OPERATIVO');
+    const enlaces = Array.from(raiz(f).querySelectorAll<HTMLAnchorElement>('tbody a[data-testid=ver-comprobante]')).map((a) => a.getAttribute('href'));
+
+    expect(enlaces).toEqual(['/comprobantes?ver=GASTO-1', '/comprobantes?ver=GASTO-2']);
   });
 
   it('un OPERATIVO no ve «Anular», pero sí «Registrar gasto»', async () => {

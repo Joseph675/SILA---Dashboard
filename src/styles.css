@@ -97,6 +97,8 @@ body {
 @media print {
   body.imprimiendo-ticket * {
     visibility: hidden;
+    /* Buttons carry a transition: without this they would still be visible for a moment when the print starts. */
+    transition: none !important;
   }
   body.imprimiendo-ticket .zona-impresion-ticket,
   body.imprimiendo-ticket .zona-impresion-ticket * {
@@ -104,15 +106,36 @@ body {
     color: #000;
   }
   body.imprimiendo-ticket .zona-impresion-ticket {
-    position: absolute;
-    inset-block-start: 0;
-    inset-inline-start: 0;
+    position: static;
     width: 100%;
     background: #fff;
     border: 0;
   }
   body.imprimiendo-ticket dialog {
     position: static;
+  }
+  /* The dialog caps its height and scrolls its body on screen; on paper the whole document must flow (and paginate). */
+  body.imprimiendo-ticket dialog,
+  body.imprimiendo-ticket dialog .overflow-y-auto {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  /* What is not the document (nor one of its ancestors) takes no room, so no blank pages are printed after it. */
+  body.imprimiendo-ticket *:not(:has(.zona-impresion-ticket)):not(.zona-impresion-ticket):not(.zona-impresion-ticket *) {
+    display: none !important;
+  }
+  body.imprimiendo-ticket,
+  body.imprimiendo-ticket :has(.zona-impresion-ticket) {
+    background: #fff;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  body.imprimiendo-ticket dialog {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
   }
 }
 
