@@ -95,10 +95,11 @@ describe('HttpAcopioRepository', () => {
     c.flush({ items: [], total: 0, page: 0, size: 10 });
   });
 
-  it('fijarPrecio: POST /acopio/precios con el cuerpo', () => {
-    repo.fijarPrecio({ id_proveedor: 3, precio_litro: 1900, vigente_desde: '2026-10-09' }).subscribe();
+  it('fijarPrecio: POST /acopio/precios con el cuerpo y la Idempotency-Key', () => {
+    repo.fijarPrecio({ id_proveedor: 3, precio_litro: 1900, vigente_desde: '2026-10-09' }, 'clave-precio-001').subscribe();
     const req = http.expectOne((r) => ruta(r.url) === '/api/v1/acopio/precios');
     expect(req.request.method).toBe('POST');
+    expect(req.request.headers.get('Idempotency-Key')).toBe('clave-precio-001');
     expect(req.request.body).toEqual({ id_proveedor: 3, precio_litro: 1900, vigente_desde: '2026-10-09' });
     req.flush({}, { status: 201, statusText: 'Created' });
   });

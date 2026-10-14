@@ -44,7 +44,7 @@ export function formatoFechaHora(utcSinZona: string | null | undefined): string 
   return `${partes['day']}/${partes['month']}/${partes['year']} ${partes['hour']}:${partes['minute']}`;
 }
 
-/** `Kevin Yoseph Mijares` -> `KY` (first two words). */
+/** `Ana María Pérez` -> `AM` (first two words). */
 export function iniciales(nombre: string): string {
   return nombre
     .split(/\s+/)

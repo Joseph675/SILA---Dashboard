@@ -145,6 +145,11 @@ describe('Gastos', () => {
       set('monto', '85000');
     }
 
+    it('avisa que las compras de ingredientes y empaques van en Insumos, no como gasto', async () => {
+      const f = await dialogo();
+      expect(texto(f, '[data-testid=aviso-insumos]')).toBe('Las compras de ingredientes y empaques se registran en Insumos, no como gasto.');
+    });
+
     it('solo ofrece las categorías activas y envía el gasto con una Idempotency-Key (sin fecha: la pone el servidor)', async () => {
       const f = await dialogo();
       const opciones = Array.from(raiz(f).querySelectorAll<HTMLOptionElement>('select option')).filter((o) => o.value).map((o) => o.textContent?.trim());

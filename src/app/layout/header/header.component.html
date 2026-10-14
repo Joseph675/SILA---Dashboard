@@ -47,47 +47,7 @@
         <app-icon name="lucidePalette" class="h-4 w-4" />
       </button>
 
-      <div class="relative hidden sm:block">
-        <button
-          type="button"
-          class="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          aria-label="Notifications"
-          [attr.aria-expanded]="notificationsOpen()"
-          (click)="toggleNotifications()"
-        >
-          <app-icon name="lucideBell" class="h-4 w-4" />
-          <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive"></span>
-        </button>
-        <div
-          class="absolute end-0 mt-2 w-80 origin-top-right rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-xl"
-          [class.hidden]="!notificationsOpen()"
-        >
-          <div class="flex items-center justify-between border-b border-border px-4 py-3">
-            <p class="text-sm font-semibold">Notifications</p>
-            <a href="#" class="text-xs font-medium text-primary hover:underline">Mark all read</a>
-          </div>
-          <div class="max-h-80 overflow-y-auto p-2">
-            @for (n of notifications; track n.title) {
-              <div class="flex gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted">
-                <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <app-icon [name]="n.icon" class="h-4 w-4" [class]="n.iconClass" />
-                </div>
-                <div class="flex-1 space-y-0.5">
-                  <p class="text-sm font-medium leading-snug">{{ n.title }}</p>
-                  <p class="text-xs leading-snug text-muted-foreground">{{ n.description }}</p>
-                  <p class="text-[11px] text-muted-foreground/60">{{ n.time }}</p>
-                </div>
-              </div>
-            }
-          </div>
-          <div class="border-t border-border p-2">
-            <a href="#" class="flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-medium text-primary hover:bg-muted">
-              View all
-              <app-icon name="lucideArrowUpRight" class="h-3.5 w-3.5" />
-            </a>
-          </div>
-        </div>
-      </div>
+      <app-notificaciones-campana />
 
       <app-user-menu />
     </div>

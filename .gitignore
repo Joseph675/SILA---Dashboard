@@ -42,3 +42,30 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Secretos y credenciales (nunca se publican)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credenciales*
+.npmrc
+
+# Notas de trabajo internas, respaldos y capturas (no son parte del entregable)
+ESTADO.md
+NOTAS*.md
+docs/PROMPT_*.md
+docs/LIMPIEZA.md
+*.bak
+*.orig
+*.rej
+*.log
+*.sql
+*.dump
+capturas/
+screenshots/

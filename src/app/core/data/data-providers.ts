@@ -15,6 +15,8 @@ import { DOCUMENTOS_REPOSITORY } from '../../features/documentos/data/documentos
 import { HttpDocumentosRepository } from '../../features/documentos/data/http-documentos.repository';
 import { GASTOS_REPOSITORY } from '../../features/gastos/data/gastos.provider';
 import { HttpGastosRepository } from '../../features/gastos/data/http-gastos.repository';
+import { HttpNotificacionesRepository } from '../../features/notificaciones/data/http-notificaciones.repository';
+import { NOTIFICACIONES_REPOSITORY } from '../../features/notificaciones/data/notificaciones.provider';
 import { AUDITORIA_REPOSITORY } from '../../features/auditoria/data/auditoria.provider';
 import { HttpAuditoriaRepository } from '../../features/auditoria/data/http-auditoria.repository';
 import { CATALOGOS_REPOSITORY } from '../../features/catalogos/data/catalogos.provider';
@@ -41,6 +43,7 @@ export function provideDataLayer(): Provider[] {
     { provide: INSUMOS_REPOSITORY, useExisting: HttpInsumosRepository },
     { provide: GASTOS_REPOSITORY, useExisting: HttpGastosRepository },
     { provide: DOCUMENTOS_REPOSITORY, useExisting: HttpDocumentosRepository },
+    { provide: NOTIFICACIONES_REPOSITORY, useExisting: HttpNotificacionesRepository },
     { provide: VENTAS_REPOSITORY, useExisting: HttpVentasRepository },
     { provide: PRECIOS_CLIENTE_REPOSITORY, useExisting: HttpPreciosClienteRepository },
     { provide: CARTERA_REPOSITORY, useExisting: HttpCarteraRepository },

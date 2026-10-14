@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import type { Observable } from 'rxjs';
 import { ApiErrorService, isApiError } from '../../../core/api/api-error';
+import { AuthService } from '../../../core/services/auth.service';
 import { DialogComponent } from '../../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../../shared/ui/form-field/form-field.component';
 import { formatoNumero } from '../../../shared/utils/formato-co';
@@ -13,12 +14,22 @@ import { CATALOGOS_REPOSITORY } from '../data/catalogos.provider';
 import { Producto, UNIDADES_MEDIDA, UnidadMedida } from '../models/catalogos.models';
 
 /** crear [ADMIN]: every field. editar: name and unit. precio [ADMIN]: base price and VAT rate. */
-export type ModoProducto = 'crear' | 'editar' | 'precio';
+export type ModoProducto = 'crear' | 'editar' | 'precio' | 'minimo';
+
+/** Optional; 0 to 99.999.999 with at most 3 decimals. Empty is valid (no minimum). */
+function stockMinimoValido(control: AbstractControl): ValidationErrors | null {
+  const v = control.value;
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0 || n > 99_999_999) return { servidor: 'Debe estar entre 0 y 99.999.999.' };
+  return Math.abs(n * 1000 - Math.round(n * 1000)) < 1e-6 ? null : { servidor: 'Máximo 3 decimales.' };
+}
 
 const TITULOS: Record<ModoProducto, string> = {
   crear: 'Nuevo producto',
   editar: 'Editar producto',
   precio: 'Cambiar precio',
+  minimo: 'Stock mínimo (alerta)',
 };
 
 @Component({
@@ -33,6 +44,8 @@ export class ProductoFormDialogComponent {
   /** Optional: without it (or if it fails) the proposed IVA is 19. */
   private readonly parametros = inject(PARAMETROS_REPOSITORY, { optional: true });
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
+  protected readonly esAdmin = computed(() => this.auth.hasRole('ADMIN'));
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   readonly modo = input<ModoProducto>('crear');
@@ -61,6 +74,7 @@ export class ProductoFormDialogComponent {
     unidad_medida: ['UND' as UnidadMedida, Validators.required],
     precio_base: [0, [SilaValidators.requerido, SilaValidators.rango(0, 999_999_999)]],
     tarifa_iva: [0, [SilaValidators.requerido, SilaValidators.rango(0, 100)]],
+    stock_minimo: [null as number | null, [stockMinimoValido]],
   });
 
   constructor() {
@@ -77,15 +91,20 @@ export class ProductoFormDialogComponent {
         unidad_medida: producto?.unidad_medida ?? 'UND',
         precio_base: producto?.precio_base ?? 0,
         tarifa_iva: producto?.tarifa_iva ?? 0,
+        stock_minimo: producto && producto.stock_minimo > 0 ? producto.stock_minimo : null,
       });
       // Only the fields of the current mode are validated and sent.
-      const { codigo_sku, nombre, unidad_medida, precio_base, tarifa_iva } = this.form.controls;
+      const { codigo_sku, nombre, unidad_medida, precio_base, tarifa_iva, stock_minimo } = this.form.controls;
       const activar = (control: { enable(): void; disable(): void }, si: boolean) => (si ? control.enable() : control.disable());
       activar(codigo_sku, modo === 'crear');
-      activar(nombre, modo !== 'precio');
-      activar(unidad_medida, modo !== 'precio');
-      activar(precio_base, modo !== 'editar');
-      activar(tarifa_iva, modo !== 'editar');
+      activar(nombre, modo === 'crear' || modo === 'editar');
+      activar(unidad_medida, modo === 'crear' || modo === 'editar');
+      activar(precio_base, modo === 'crear' || modo === 'precio');
+      activar(tarifa_iva, modo === 'crear' || modo === 'precio');
+      // Only an ADMIN sets the alert threshold (the server rejects anyone else with 403 / 20008); the others see it read-only.
+      activar(stock_minimo, modo !== 'precio' && untracked(() => this.esAdmin()));
+      stock_minimo.setValidators(modo === 'minimo' ? [SilaValidators.requerido, stockMinimoValido] : [stockMinimoValido]);
+      stock_minimo.updateValueAndValidity({ emitEvent: false });
 
       // SUPUESTO: VC-12. El IVA de un producto NUEVO se propone con el parámetro IVA_DEFECTO_PORCENTAJE (19 si no se puede leer);
       // solo se aplica si la persona aún no tocó el campo.
@@ -133,11 +152,20 @@ export class ProductoFormDialogComponent {
           precio_base: Number(valor.precio_base),
           tarifa_iva: Number(valor.tarifa_iva),
           ...(lineas.length > 0 ? { receta: lineas } : {}),
+          ...(valor.stock_minimo !== null && valor.stock_minimo !== undefined ? { stock_minimo: Number(valor.stock_minimo) } : {}),
         });
         break;
       }
       case 'editar':
-        peticion = this.repo.actualizarProducto(actual!.id_producto, { nombre: limpiarTexto(valor.nombre), unidad_medida: valor.unidad_medida });
+        // SUPUESTO: SM-02. Un ADMIN envía el mínimo solo si lo escribió y cambió; un OPERATIVO nunca lo envía (daría 403).
+        peticion = this.repo.actualizarProducto(actual!.id_producto, {
+          nombre: limpiarTexto(valor.nombre),
+          unidad_medida: valor.unidad_medida,
+          ...(this.esAdmin() && valor.stock_minimo !== null && valor.stock_minimo !== undefined && Number(valor.stock_minimo) !== actual!.stock_minimo ? { stock_minimo: Number(valor.stock_minimo) } : {}),
+        });
+        break;
+      case 'minimo':
+        peticion = this.repo.cambiarStockMinimoProducto(actual!.id_producto, Number(valor.stock_minimo));
         break;
       case 'precio':
         peticion = this.repo.cambiarPrecioProducto(actual!.id_producto, { precio_base: Number(valor.precio_base), tarifa_iva: Number(valor.tarifa_iva) });

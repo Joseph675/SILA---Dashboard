@@ -4,6 +4,7 @@ import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, Validatio
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
 import { ClaveIdempotente } from '../../core/api/idempotencia';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
+import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { aplicarCamposDelServidor } from '../../shared/utils/errores-formulario';
 import { mensajeDeFallo } from '../../shared/utils/errores-api';
@@ -22,13 +23,17 @@ function fechaNoFutura(control: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-gasto-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, FormFieldComponent, ReactiveFormsModule],
+  imports: [DialogComponent, FormFieldComponent, IconComponent, ReactiveFormsModule],
   template: `
     <app-dialog [open]="abierto()" title="Registrar gasto" description="No se puede editar ni borrar después: si te equivocas, un administrador lo anula y registras el correcto." [cerrable]="!guardando()" (closed)="cerrar.emit()">
       <form id="gasto-form" [formGroup]="form" (ngSubmit)="guardar()" novalidate class="space-y-4">
         @if (errorGeneral(); as mensaje) {
           <p role="alert" class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm" data-testid="error-gasto">{{ mensaje }}</p>
         }
+        <p class="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm" data-testid="aviso-insumos">
+          <app-icon name="lucideInfo" class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          Las compras de ingredientes y empaques se registran en Insumos, no como gasto.
+        </p>
         <app-form-field etiqueta="Categoría" ayuda="Solo las categorías activas." [obligatorio]="true">
           <select class="sila-select" formControlName="categoria">
             <option value="">Elige una categoría…</option>

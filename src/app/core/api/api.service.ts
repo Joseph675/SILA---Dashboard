@@ -2,6 +2,15 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { nuevaClaveIdempotencia } from './idempotencia';
+
+/**
+ * Writes under these paths MUST carry `Idempotency-Key` (the API answers 400 without it). Safety net: a repository that
+ * forgot to pass one still sends a fresh key. The proper way is still a key per USER ATTEMPT from `ClaveIdempotente`,
+ * reused only to retry the same data; the key added here is per call (one per `post(...)`, so an HTTP retry of that same
+ * call keeps it).
+ */
+const ESCRITURA_CON_CLAVE = /^\/?(acopio|produccion|ventas|cartera|documentos|finanzas\/gastos|insumos\/(compras|ajustes))(\/|$)/;
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
@@ -31,19 +40,25 @@ export class ApiService {
   }
 
   post<T>(path: string, body: unknown, opciones?: ApiOpciones): Observable<T> {
-    return this.http.post<T>(this.buildUrl(path), body, this.buildOptions(opciones));
+    return this.http.post<T>(this.buildUrl(path), body, this.buildOptions(this.conClave(path, opciones)));
   }
 
   put<T>(path: string, body: unknown, opciones?: ApiOpciones): Observable<T> {
-    return this.http.put<T>(this.buildUrl(path), body, this.buildOptions(opciones));
+    return this.http.put<T>(this.buildUrl(path), body, this.buildOptions(this.conClave(path, opciones)));
   }
 
   patch<T>(path: string, body: unknown, opciones?: ApiOpciones): Observable<T> {
-    return this.http.patch<T>(this.buildUrl(path), body, this.buildOptions(opciones));
+    return this.http.patch<T>(this.buildUrl(path), body, this.buildOptions(this.conClave(path, opciones)));
   }
 
   delete<T>(path: string, opciones?: ApiOpciones): Observable<T> {
-    return this.http.delete<T>(this.buildUrl(path), this.buildOptions(opciones));
+    return this.http.delete<T>(this.buildUrl(path), this.buildOptions(this.conClave(path, opciones)));
+  }
+
+  /** The explicit key of the caller wins; otherwise a write that requires one gets a fresh `randomUUID()`. */
+  private conClave(path: string, opciones?: ApiOpciones): ApiOpciones | undefined {
+    if (opciones?.idempotencyKey || !ESCRITURA_CON_CLAVE.test(path)) return opciones;
+    return { ...opciones, idempotencyKey: nuevaClaveIdempotencia() };
   }
 
   /** Turns `idempotencyKey` into its header and leaves the rest as HttpClient options. */

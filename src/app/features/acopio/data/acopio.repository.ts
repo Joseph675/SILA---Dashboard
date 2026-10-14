@@ -37,8 +37,8 @@ export abstract class AcopioRepository {
   abstract pagoLecheros(query: PageQuery & PagoLecherosQuery): Observable<Page<PagoLechero>>;
 
   abstract listarPrecios(query: PageQuery & PreciosQuery): Observable<Page<PrecioProveedor>>;
-  /** [ADMIN] Only affects NEW deliveries. */
-  abstract fijarPrecio(datos: FijarPrecioLeche): Observable<PrecioProveedor>;
+  /** [ADMIN] Only affects NEW deliveries. Requires `Idempotency-Key` (like every write under /acopio). */
+  abstract fijarPrecio(datos: FijarPrecioLeche, claveIdempotencia: string): Observable<PrecioProveedor>;
   abstract saldos(query: PageQuery & SaldosQuery): Observable<Page<SaldoProveedor>>;
   abstract listarPagos(query: PageQuery & PagosQuery): Observable<Page<PagoProveedor>>;
   /** [ADMIN] Requires `Idempotency-Key`. 400 / 20005 when the amount exceeds the quincena's balance. */

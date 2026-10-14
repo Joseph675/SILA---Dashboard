@@ -78,6 +78,9 @@ export class HttpCatalogosRepository extends CatalogosRepository {
   actualizarProducto(id: number, datos: ProductoActualizar): Observable<Producto> {
     return this.api.put<Producto>(`${BASE}/productos/${id}`, datos);
   }
+  cambiarStockMinimoProducto(id: number, stockMinimo: number): Observable<Producto> {
+    return this.api.patch<Producto>(`${BASE}/productos/${id}/stock-minimo`, { stock_minimo: stockMinimo });
+  }
   cambiarPrecioProducto(id: number, datos: ProductoCambiarPrecio): Observable<Producto> {
     return this.api.patch<Producto>(`${BASE}/productos/${id}/precio`, datos);
   }

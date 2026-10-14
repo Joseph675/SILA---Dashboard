@@ -53,7 +53,7 @@ Orden: clave temporal → cambiarla → segundo factor. Los **ADMIN no pueden en
 ```jsonc
 // AuthResponse (se omiten los campos nulos)
 { "estado": "OK", "access_token": "eyJ…", "expires_in": 900,
-  "usuario": { "id_usuario": 1, "usuario": "kevin.mijares", "nombre": "Kevin Mijares",
+  "usuario": { "id_usuario": 1, "usuario": "ana.perez", "nombre": "Ana Pérez",
                "email": "…", "rol": "ADMIN", "mfa_activo": true } }
 { "estado": "CAMBIAR_CLAVE" | "MFA_REQUERIDO" | "MFA_ENROLAR", "token_temporal": "eyJ…" }
 ```
@@ -178,7 +178,7 @@ Cada **recepción** es una entrega de leche de un proveedor LECHERO, con su cont
 { "id_recepcion": 7, "id_proveedor": 3, "proveedor": "Finca La Esperanza", "id_periodo": 19,
   "fecha": "2026-10-09", "litros": 100.5, "temperatura": 8, "acidez": 16,
   "estado_calidad": "APROBADO", "motivo_rechazo": null,
-  "usuario_registro": "kevin.mijares", "fecha_registro": "2026-10-09T14:03:11" }   // fecha_registro: UTC sin zona
+  "usuario_registro": "ana.perez", "fecha_registro": "2026-10-09T14:03:11" }   // fecha_registro: UTC sin zona
 ```
 
 | Ruta | Rol | Detalle |
@@ -199,7 +199,7 @@ Un **lote** es lo que se fabrica con leche: consume litros y **suma su cantidad 
   "fecha_produccion": "2026-10-09", "litros_leche_usados": 50, "cantidad_obtenida": 40, "porcentaje_rendimiento": 80,
   "costo_total": 100000, "costo_unitario": 2500, "fecha_vencimiento": "2026-10-30",
   "dias_restantes": 21, "nivel_alerta": null,            // nivel_alerta (VENCIDO | CRITICO | PROXIMO) solo si faltan 7 dias o menos
-  "usuario_registro": "kevin.mijares", "fecha_registro": "2026-10-09T14:10:00" }
+  "usuario_registro": "ana.perez", "fecha_registro": "2026-10-09T14:10:00" }
 // Ajuste
 { "id_ajuste": 9, "id_producto": 3, "producto": "Queso campesino", "codigo_sku": "QSO", "unidad_medida": "KG",
   "tipo_ajuste": "MERMA", "cantidad_delta": -5, "observacion": "Se cayó una tina",
@@ -515,3 +515,25 @@ El backend solo lleva el registro y el estado; la subida real a Drive la hace qu
 | POST | `/documentos/{id}/error` | OPERATIVO+ | `{mensaje}` → ERROR, suma un intento; sigue en la cola. 409/20010 si ya estaba subido |
 
 Las tres escrituras exigen `Idempotency-Key`. `Documento`: `id_documento, tipo_entidad, id_entidad, nombre_archivo, mime_type, drive_url, checksum_sha256, estado_carga, intentos, ultimo_error, usuario_carga, fecha_registro, fecha_carga`.
+
+## Notificaciones y stock mínimo
+
+**`GET /api/v1/notificaciones`** (cualquier usuario autenticado) → `{ total, criticas, items: Notificacion[] }`, máximo 100, críticas primero.
+Las alertas se **calculan al consultar**: no se guardan y desaparecen solas cuando el problema se resuelve. «Marcar como leídas» lo resuelve el cliente guardando las `clave` vistas (localStorage); una alerta nueva trae una `clave` que no está en ese conjunto.
+
+`Notificacion = { clave, tipo, severidad: 'CRITICA'|'ADVERTENCIA', titulo, detalle, entidad, id_entidad, fecha }` (`fecha` e `id_entidad` pueden ser null).
+
+| `tipo` | Cuándo | `entidad` (a dónde llevar) |
+|---|---|---|
+| `INSUMO_AGOTADO` (crítica) / `INSUMO_BAJO` | insumo activo con `stock_minimo` > 0 y stock = 0 / ≤ mínimo | `INSUMO` |
+| `PRODUCTO_AGOTADO` (crítica) / `PRODUCTO_BAJO` | igual, para productos terminados | `PRODUCTO` |
+| `LOTE_VENCIDO` / `LOTE_POR_VENCER` | lote con ≤ 7 días (hasta 30 vencido) y el producto aún tiene stock; crítica si ≤ 2 días | `LOTE` |
+| `CARTERA_VENCIDA` | por cliente; crítica si la mora supera 30 días | `CLIENTE` |
+| `CARTERA_POR_VENCER` | por cliente, vence en los próximos 3 días | `CLIENTE` |
+| `PERIODO_SIN_CERRAR` | quincena terminada que sigue abierta | `PERIODO` |
+| `LECHE_POR_PAGAR` | quincena terminada con saldo pendiente a lecheros | `PERIODO` |
+| `DOCUMENTOS_ERROR` | documentos que fallaron al subir (una sola fila con el conteo) | `DOCUMENTO` |
+
+**Stock mínimo de productos:** `Producto` ahora trae `stock_minimo` y `bajo_minimo` (boolean; 0 = sin alerta). Se fija con `PATCH /catalogos/productos/{id}/stock-minimo` `{stock_minimo}` (**ADMIN**, 0 a 99.999.999, 3 decimales) o con el campo opcional `stock_minimo` en `POST /catalogos/productos` y `PUT /catalogos/productos/{id}` (en el PUT exige ADMIN solo si el campo viene; `null` = no cambia). Los insumos ya tenían `stock_minimo` y `bajo_minimo`.
+
+**Categoría de gasto INSUMOS desactivada:** las compras de ingredientes y empaques se registran en Insumos (si no, la misma compra se contaba en la caja y en el resultado dos veces). Ya no aparece al registrar gastos.

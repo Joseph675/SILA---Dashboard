@@ -52,8 +52,8 @@ export class HttpAcopioRepository extends AcopioRepository {
     return this.api.get<Page<PrecioProveedor>>(`${BASE}/precios`, { ...query });
   }
 
-  fijarPrecio(datos: FijarPrecioLeche): Observable<PrecioProveedor> {
-    return this.api.post<PrecioProveedor>(`${BASE}/precios`, datos);
+  fijarPrecio(datos: FijarPrecioLeche, claveIdempotencia: string): Observable<PrecioProveedor> {
+    return this.api.post<PrecioProveedor>(`${BASE}/precios`, datos, { idempotencyKey: claveIdempotencia });
   }
 
   saldos(query: PageQuery & SaldosQuery): Observable<Page<SaldoProveedor>> {

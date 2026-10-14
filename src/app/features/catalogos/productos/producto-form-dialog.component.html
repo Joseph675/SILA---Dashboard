@@ -30,6 +30,17 @@
       </app-form-field>
     }
 
+    @if (modo() !== 'precio') {
+      <app-form-field
+        class="sm:col-span-2"
+        etiqueta="Stock mínimo (alerta)"
+        [ayuda]="esAdmin() ? 'Opcional. Avisa cuando el stock llegue a este valor o menos. 0 o vacío = sin alerta.' : 'Solo un administrador lo cambia.'"
+        [obligatorio]="modo() === 'minimo'"
+      >
+        <input class="sila-input" type="number" inputmode="decimal" min="0" max="99999999" step="0.001" formControlName="stock_minimo" />
+      </app-form-field>
+    }
+
     @if (modo() === 'crear') {
       <div class="sm:col-span-2">
         <app-receta-editor [(lineas)]="receta" [error]="errorReceta()" />

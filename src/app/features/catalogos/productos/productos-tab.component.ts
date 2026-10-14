@@ -21,6 +21,7 @@ const MENSAJES_GUARDADO: Record<ModoProducto, string> = {
   crear: 'creado',
   editar: 'actualizado',
   precio: 'con precio actualizado',
+  minimo: 'con stock mínimo actualizado',
 };
 
 @Component({
@@ -67,6 +68,8 @@ export class ProductosTabComponent {
     { key: 'precio_base', label: 'Precio base', align: 'end', value: (p) => p.precio_base },
     { key: 'tarifa_iva', label: 'IVA', align: 'end', value: (p) => p.tarifa_iva },
     { key: 'stock', label: 'Stock', align: 'end', value: (p) => p.stock },
+    // Not in the API's sort list (id_producto, codigo_sku, nombre, unidad_medida, precio_base, tarifa_iva, stock, activo).
+    { key: 'stock_minimo', label: 'Mínimo', align: 'end', sortable: false, value: (p) => p.stock_minimo },
     { key: 'activo', label: 'Estado', value: (p) => (p.activo ? 1 : 0) },
     { key: 'acciones', label: 'Acciones', sortable: false, align: 'end', value: () => '' },
   ];

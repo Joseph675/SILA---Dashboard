@@ -45,6 +45,8 @@ export abstract class CatalogosRepository {
   /** [ADMIN] */
   abstract crearProducto(datos: ProductoCrear): Observable<Producto>;
   abstract actualizarProducto(id: number, datos: ProductoActualizar): Observable<Producto>;
+  /** [ADMIN] Quick edit of the alert threshold: 0 to 99.999.999, 3 decimals. */
+  abstract cambiarStockMinimoProducto(id: number, stockMinimo: number): Observable<Producto>;
   /** [ADMIN] */
   abstract cambiarPrecioProducto(id: number, datos: ProductoCambiarPrecio): Observable<Producto>;
   /** [ADMIN] */

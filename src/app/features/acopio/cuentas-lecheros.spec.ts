@@ -73,6 +73,7 @@ describe('Cuentas con los lecheros', () => {
     const cuerpo = repo['fijarPrecio'].mock.calls[0][0];
     expect(cuerpo).toMatchObject({ id_proveedor: 3, precio_litro: 1900 });
     expect(cuerpo.vigente_desde).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(repo['fijarPrecio'].mock.calls[0][1].length).toBeGreaterThanOrEqual(8);
   });
 
   async function dialogoPago(): Promise<ComponentFixture<PagoLecheroDialogComponent>> {

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, effect, inject, input, 
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { ApiErrorService, causaDe, isApiError } from '../../core/api/api-error';
+import { ClaveIdempotente } from '../../core/api/idempotencia';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { OpcionSelector, SelectorBuscableComponent } from '../../shared/ui/selector-buscable/selector-buscable.component';
@@ -62,6 +63,7 @@ export class PrecioLecheDialogComponent {
 
   protected readonly proveedor = signal<number | null>(null);
   private readonly tocado = signal(false);
+  private readonly clave = new ClaveIdempotente();
   protected readonly guardando = signal(false);
   protected readonly errorGeneral = signal<string | null>(null);
   protected readonly errorProveedor = () => (this.tocado() && this.proveedor() === null ? 'Elige el lechero.' : null);
@@ -79,6 +81,7 @@ export class PrecioLecheDialogComponent {
         this.tocado.set(false);
         this.errorGeneral.set(null);
         this.guardando.set(false);
+        this.clave.descartar();
       }
     });
   }
@@ -92,18 +95,22 @@ export class PrecioLecheDialogComponent {
     const v = this.form.getRawValue();
     this.guardando.set(true);
     this.errorGeneral.set(null);
-    // The API does not ask for Idempotency-Key here (setting a price is not an accumulation).
+    // One key per user attempt: the same one only to retry the same data after a network failure.
+    const cuerpo = { id_proveedor: proveedor, precio_litro: Number(v.precio), vigente_desde: v.desde };
     this.repo
-      .fijarPrecio({ id_proveedor: proveedor, precio_litro: Number(v.precio), vigente_desde: v.desde })
+      .fijarPrecio(cuerpo, this.clave.para(cuerpo))
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (precio) => {
           this.guardando.set(false);
+          this.clave.exito();
           this.guardado.emit(precio);
         },
         error: (fallo: unknown) => {
           this.guardando.set(false);
+          this.clave.fallo(fallo);
           const error = causaDe(fallo);
+          if (isApiError(error) && error.code === 20017) this.clave.descartar();
           if (isApiError(error) && error.code === 20001) {
             const resto = aplicarCamposDelServidor(this.form, error.fields, { precio_litro: 'precio', vigente_desde: 'desde' });
             this.errorGeneral.set(resto.length > 0 ? `${error.message} ${resto.join('; ')}` : error.message);

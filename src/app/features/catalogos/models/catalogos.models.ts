@@ -92,6 +92,10 @@ export interface Producto {
   tarifa_iva: number;
   /** Read only: changes only through production, sales and adjustments. */
   stock: number;
+  /** Alert threshold: 0 = no alert. */
+  stock_minimo: number;
+  /** The stock is at or under the minimum (and the minimum is above 0). */
+  bajo_minimo: boolean;
   activo: boolean;
 }
 
@@ -104,6 +108,8 @@ export interface ProductoCrear {
   tarifa_iva: number;
   /** Supplies one unit uses. Two steps in the database: if the recipe fails the product EXISTS already (see `RecetaFallida`). */
   receta?: LineaRecetaGuardar[];
+  /** Optional alert threshold (0 to 99.999.999, 3 decimals). */
+  stock_minimo?: number;
 }
 
 /** One line of a recipe to save: how much of an insumo ONE unit of the product uses, in the insumo's unit. */
@@ -139,6 +145,8 @@ export interface Receta {
 export interface ProductoActualizar {
   nombre: string;
   unidad_medida: UnidadMedida;
+  /** Only an ADMIN may send it (403 / 20008 otherwise). Left out = the minimum does not change. */
+  stock_minimo?: number;
 }
 
 /** Change price [ADMIN]. */

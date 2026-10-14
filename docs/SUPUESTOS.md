@@ -153,3 +153,13 @@ Decisiones tomadas donde `prompt.md` no fija la regla. En el código cada una ll
 | GD-05 | El contrato no define filtros de fecha ni orden fuera de los listados; en Gastos solo se ordena por los 6 campos que lista (sin ordenar por quincena ni usuario). | `gastos-tab.component.ts` |
 | GD-06 | Documentos: «Registrar documento» está en el detalle de la recepción (acción «Documentos» de cada fila) y la lista general vive en `/documentos` (Administración). La subida real a Drive no existe: queda un gancho (`SUBIDOR_DOCUMENTOS`, por defecto `null`) y un servicio que, si algún día hay subidor, reporta `subido` o `error` con el resultado REAL. Sin subidor no hay botón de subir y nunca se marca SUBIDO. | `documentos/subida-drive.ts`, `documentos.service.ts` |
 | GD-07 | Solo se ofrece como enlace una `drive_url` que empiece por `http://` o `https://`. | `documento-estado.ts` |
+
+## Notificaciones y stock mínimo
+
+| ID | Supuesto | Dónde |
+|---|---|---|
+| SM-01 | «Leída» es local: se guarda en `localStorage`, por usuario (`sila_notif_vistas_<id>`), solo el conjunto de `clave`s vistas (nada sensible), hasta 1000 (las más antiguas se descartan). Una alerta resuelta y repetida con la misma `clave` no vuelve a avisar; una `clave` nueva sí. Si el almacenamiento falla, «leído» dura hasta recargar. Las alertas leídas siguen en la lista. | `notificaciones.service.ts`, `notificaciones.logica.ts` |
+| SM-02 | Al editar un producto, un ADMIN envía `stock_minimo` solo si lo escribió y cambió; un OPERATIVO lo ve de solo lectura y nunca lo envía (daría 403). Vacío o 0 = sin alerta. Acepta hasta 3 decimales y llega a 99.999.999. | `producto-form-dialog.component.ts` |
+| SM-03 | La campana refresca al abrirse, al volver a la pestaña y cada 2 minutos; si falla, conserva la última lista sin mostrar error. El punto lleva el número de no vistas (99+) en rojo si alguna es crítica y en ámbar si solo hay advertencias; la severidad también va escrita. | `notificaciones-campana.component.ts` |
+| SM-04 | Destinos: INSUMO → Insumos, PRODUCTO → Inventario, LOTE → Producción (lotes), CLIENTE → Cartera, PERIODO → cuentas de esa quincena (`/periodos/{id}`, solo ADMIN: a un OPERATIVO lo devuelve a Catálogos), DOCUMENTO → Documentos Drive. «Ver todas» abre `/notificaciones`, agrupadas en críticas y advertencias. | `notificaciones.logica.ts` |
+| SM-05 | `GET /inventario` no trae `stock_minimo` ni `bajo_minimo` (el contrato dice que `Producto` sí): la marca «bajo mínimo» está en la tabla de Catálogos → Productos y en Insumos, pero NO en la tabla de Inventario, porque no hay dato que mostrar sin inventarlo. | `productos-tab.component.html` |

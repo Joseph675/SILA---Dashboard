@@ -60,7 +60,15 @@
     {{ numero(producto.tarifa_iva) }} %
   </ng-template>
   <ng-template appDataTableCell="stock" [cellRows]="listado.datos()?.items" let-producto>
-    <span [class.text-muted-foreground]="producto.stock === 0">{{ numero(producto.stock) }}</span>
+    <span class="inline-flex flex-wrap items-center justify-end gap-2">
+      <span [class.text-muted-foreground]="producto.stock === 0" [class.text-destructive]="producto.bajo_minimo" [class.font-medium]="producto.bajo_minimo">{{ numero(producto.stock) }}</span>
+      @if (producto.bajo_minimo) {
+        <app-status-chip texto="Bajo el mínimo" tono="peligro" />
+      }
+    </span>
+  </ng-template>
+  <ng-template appDataTableCell="stock_minimo" [cellRows]="listado.datos()?.items" let-producto>
+    <span class="tabular-nums" [class.text-muted-foreground]="producto.stock_minimo === 0">{{ producto.stock_minimo > 0 ? numero(producto.stock_minimo) : 'Sin alerta' }}</span>
   </ng-template>
   <ng-template appDataTableCell="activo" [cellRows]="listado.datos()?.items" let-producto>
     <app-status-chip [texto]="producto.activo ? 'Activo' : 'Inactivo'" [tono]="producto.activo ? 'exito' : 'neutro'" />
@@ -76,6 +84,10 @@
         Receta<span class="sr-only"> de {{ producto.nombre }}</span>
       </button>
       <!-- Hiding is not security: the procedures reject OPERATIVO with 20008 anyway. -->
+      <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="abrir('minimo', producto)">
+        <app-icon name="lucideBellRing" class="size-3.5" aria-hidden="true" />
+        Mínimo<span class="sr-only"> de {{ producto.nombre }}</span>
+      </button>
       <button *hasRole="'ADMIN'" type="button" class="sila-btn sila-btn-ghost sila-btn-sm" (click)="abrir('precio', producto)">
         <app-icon name="lucideTag" class="size-3.5" aria-hidden="true" />
         Precio<span class="sr-only"> de {{ producto.nombre }}</span>
