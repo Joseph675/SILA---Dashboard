@@ -21,6 +21,10 @@ export const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'tablero' },
       {
+        path: 'resultado-quincena',
+        loadChildren: () => import('./features/resultado-quincena/resultado-quincena.routes').then((m) => m.RESULTADO_QUINCENA_ROUTES),
+      },
+      {
         path: 'tablero',
         loadChildren: () => import('./features/tablero/tablero.routes').then((m) => m.TABLERO_ROUTES),
       },

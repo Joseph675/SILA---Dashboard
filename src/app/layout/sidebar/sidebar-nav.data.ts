@@ -51,7 +51,7 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     label: 'Finanzas',
     items: [
       { label: 'Gastos', icon: 'lucideBanknote', route: '/gastos' },
-      { label: 'Resultado por quincena', icon: 'lucideChartColumn' },
+      { label: 'Resultado por quincena', icon: 'lucideChartColumn', route: '/resultado-quincena' },
       { label: 'Períodos', icon: 'lucideCalendarRange', route: '/periodos', rol: 'ADMIN' },
     ],
   },

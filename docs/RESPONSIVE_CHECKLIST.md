@@ -33,8 +33,10 @@ Se midió cada pantalla, ya con sesión de administrador, en los cuatro anchos. 
 | `/auditoria?pestana=cambios` | OK | OK | OK | OK |
 | `/auditoria?pestana=errores` | OK | OK | OK | OK |
 | `/cuenta` | OK | OK | OK | OK |
+| `/resultado-quincena` | OK | OK | OK | OK |
 
 Escritorio (1280 px): sin scroll horizontal en las 24 pantallas.
+`/resultado-quincena` se midió aparte (360, 390, 430 y 768 px, con sesión de OPERATIVO): sin scroll horizontal de la página, zonas táctiles ≥ 44 px y campos ≥ 16 px; la gráfica del año se desliza dentro de su propio contenedor y la tabla del año pasa a tarjetas por debajo de 768 px.
 Se midió con un guion de Playwright que no está en el repo; para repetirlo a mano, DevTools en modo teléfono a cada ancho.
 
 ## 2. Interacciones revisadas a 390 px (automático)
@@ -54,4 +56,5 @@ Se midió con un guion de Playwright que no está en el repo; para repetirlo a m
 - [ ] Impresión del ticket y del recibo desde el teléfono.
 - [ ] Tablas pequeñas dentro de diálogos que siguen con scroll horizontal propio: detalle de lechero («Cuánto le debo») y «Ventas pendientes» de Cartera.
 - [ ] Pestañas con el indicador de scroll en 360 px (se desplazan a la pestaña elegida, sin degradado en el borde).
-- [ ] Gráficos: no hay pantallas con gráficos en uso (el Tablero sigue «Pronto»); revisarlos cuando se construya.
+- [ ] Gráficos (Tablero y «Resultado por quincena»): en teléfono real, que deslizar la gráfica del año con el dedo no choque con el scroll de la página, y que el toque en una columna seleccione la quincena (con emulación táctil solo se probó con el puntero).
+- [x] «Resultado por quincena»: gráfica del año (24 quincenas, scroll propio, leyenda a la izquierda) y tabla del año (tarjetas en móvil) revisadas a 360, 390, 430 y 768 px.
