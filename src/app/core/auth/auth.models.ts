@@ -27,6 +27,16 @@ export interface AuthResponse {
   codigos_respaldo?: string[];
   /** Only after signing in with a backup code: how many are left. */
   codigos_restantes?: number;
+  /** Only with `MFA_REQUERIDO`: the person has at least one passkey (Face ID / fingerprint) registered. */
+  passkey_disponible?: boolean;
+}
+
+/** `GET /auth/passkeys` (and the `201` of registering one). Dates are UTC without a zone; `fecha_ultimo_uso` is null if never used. */
+export interface Passkey {
+  id_passkey: number;
+  nombre: string;
+  fecha_creacion: string;
+  fecha_ultimo_uso: string | null;
 }
 
 /** Answer of `POST /auth/mfa/configurar`: the QR is drawn from `otpauth_uri`. */

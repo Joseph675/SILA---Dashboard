@@ -1,8 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
 import { ApiOpciones, ApiService } from '../api/api.service';
-import type { ActualizarPerfilRequest, AuthResponse, CambiarClaveRequest, CodigosRespaldo, RegenerarRequest, MfaConfig, RespaldoEstado, Rol, Sesion, SesionAbierta, SesionesCerradas } from '../auth/auth.models';
+import type { ActualizarPerfilRequest, AuthResponse, Passkey, CambiarClaveRequest, CodigosRespaldo, RegenerarRequest, MfaConfig, RespaldoEstado, Rol, Sesion, SesionAbierta, SesionesCerradas } from '../auth/auth.models';
 import { CanalSesion } from '../session/canal-sesion.service';
+import type { OpcionesCreacion, OpcionesSolicitud } from '../auth/webauthn';
 
 export type { Rol, Sesion } from '../auth/auth.models';
 
@@ -91,6 +92,36 @@ export class AuthService {
     return this.api
       .post<AuthResponse>('auth/mfa/respaldo', { codigo_respaldo: codigoRespaldo }, conTemporal(tokenTemporal))
       .pipe(tap((r) => this.aplicar(r)));
+  }
+
+  // ---------- Passkeys: Face ID / fingerprint ----------
+  // The options and the credential travel in the STANDARD WebAuthn JSON (camelCase): they are passed as they are, never converted.
+
+  /** Login step: the challenge to sign (`409` if the person has no passkeys). */
+  opcionesPasskeyLogin(tokenTemporal: string): Observable<OpcionesSolicitud> {
+    return this.api.post<OpcionesSolicitud>('auth/passkey/opciones', null, conTemporal(tokenTemporal));
+  }
+
+  /** Same answer as `verificarMfa`. A bad signature is `401` and counts as a failed attempt (it can lock the account: `423`). */
+  verificarPasskey(credencial: AuthenticationResponseJSON, tokenTemporal: string): Observable<AuthResponse> {
+    return this.api.post<AuthResponse>('auth/passkey/verificar', { credencial }, conTemporal(tokenTemporal)).pipe(tap((r) => this.aplicar(r)));
+  }
+
+  listarPasskeys(): Observable<Passkey[]> {
+    return this.api.get<Passkey[]>('auth/passkeys');
+  }
+
+  /** Asks for the app code (or a backup code) before handing out the challenge to register a device. */
+  opcionesRegistroPasskey(codigo: string): Observable<OpcionesCreacion> {
+    return this.api.post<OpcionesCreacion>('auth/passkeys/opciones', { codigo });
+  }
+
+  registrarPasskey(nombre: string, credencial: RegistrationResponseJSON): Observable<Passkey> {
+    return this.api.post<Passkey>('auth/passkeys', { nombre, credencial });
+  }
+
+  quitarPasskey(idPasskey: number): Observable<void> {
+    return this.api.delete<void>(`auth/passkeys/${idPasskey}`);
   }
 
   // ---------- Backup codes (signed in) ----------

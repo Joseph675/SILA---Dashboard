@@ -1,10 +1,12 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiErrorService, esSesionVencida } from '../../core/api/api-error';
 import type { AuthResponse, MfaConfig } from '../../core/auth/auth.models';
 import { urlRetornoSegura } from '../../core/auth/url-retorno';
 import { AuthService } from '../../core/services/auth.service';
+import { PasskeyError, PasskeyService } from '../../core/services/passkey.service';
 import { ThemeService } from '../../layout/services/theme.service';
 import { FormFieldComponent } from '../../shared/ui/form-field/form-field.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
@@ -58,6 +60,7 @@ const TITULOS: Record<PasoLogin, string> = {
 export class LoginPageComponent {
   private readonly auth = inject(AuthService);
   private readonly errores = inject(ApiErrorService);
+  private readonly passkey = inject(PasskeyService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
@@ -72,6 +75,15 @@ export class LoginPageComponent {
   protected readonly verClave = signal(false);
   /** Step 4 alternative: the person lost the phone and types a backup code. */
   protected readonly usarRespaldo = signal(false);
+  /** The server says this person has a passkey (`MFA_REQUERIDO` + `passkey_disponible`). */
+  private readonly passkeyDisponible = signal(false);
+  /** This browser can use Face ID / fingerprint (WebAuthn with a built-in verifier). Known a moment after the page opens. */
+  private readonly navegadorSoporta = signal(false);
+  protected readonly ofrecerPasskey = computed(() => this.passkeyDisponible() && this.navegadorSoporta());
+  /** Step 4 first option: the big «Entrar con Face ID / huella» button. The person can leave it for a code. */
+  protected readonly usarPasskey = signal(false);
+  /** A soft notice (not an error): the person closed the system dialog. */
+  protected readonly avisoPasskey = signal<string | null>(null);
   /** The 10 codes of a just-activated second factor, kept only until the person confirms having saved them. */
   protected readonly codigosRespaldo = signal<readonly string[] | null>(null);
   /** For the file name and the heading of the codes screen. */
@@ -94,6 +106,7 @@ export class LoginPageComponent {
         .navigate(['/login'], { queryParams: { aviso: null }, queryParamsHandling: 'merge', replaceUrl: true })
         .catch(() => undefined);
     }
+    void this.passkey.soportado().then((si) => this.navegadorSoporta.set(si));
     // Every step puts the cursor in its first field.
     effect(() => {
       this.paso();
@@ -158,6 +171,55 @@ export class LoginPageComponent {
     });
   }
 
+  /**
+   * Face ID / fingerprint: ask the server for a fresh challenge, let the system dialog sign it, send the signature.
+   * Each press asks for NEW options, so retrying after an expired challenge (409) just works.
+   */
+  protected async entrarConPasskey(): Promise<void> {
+    if (this.ocupado() || !this.tokenTemporal) return;
+    const token = this.tokenTemporal;
+    this.ocupar();
+    this.avisoPasskey.set(null);
+    try {
+      const opciones = await firstValueFrom(this.auth.opcionesPasskeyLogin(token));
+      const credencial = await this.passkey.obtener(opciones);
+      if (!credencial) {
+        this.ocupado.set(false);
+        this.avisoPasskey.set('Cancelaste la verificación. Puedes intentarlo de nuevo o usar un código.');
+        return;
+      }
+      const respuesta = await firstValueFrom(this.auth.verificarPasskey(credencial, token));
+      this.procesar(respuesta);
+    } catch (fallo) {
+      if (fallo instanceof PasskeyError) {
+        this.ocupado.set(false);
+        this.error.set(fallo.message);
+        return;
+      }
+      this.fallar(fallo);
+    }
+  }
+
+  protected usarCodigoApp(): void {
+    this.usarPasskey.set(false);
+    this.usarRespaldo.set(false);
+    this.error.set(null);
+    this.avisoPasskey.set(null);
+  }
+
+  protected usarCodigoRespaldo(): void {
+    this.usarPasskey.set(false);
+    this.usarRespaldo.set(true);
+    this.error.set(null);
+    this.avisoPasskey.set(null);
+  }
+
+  protected volverAPasskey(): void {
+    this.usarPasskey.set(true);
+    this.usarRespaldo.set(false);
+    this.error.set(null);
+  }
+
   /** "Continuar" on the codes screen: they are dropped and the person goes in. */
   protected continuarTrasCodigos(): void {
     this.codigosRespaldo.set(null);
@@ -194,7 +256,9 @@ export class LoginPageComponent {
         this.cargarConfiguracionMfa();
         return;
       case 'MFA_REQUERIDO':
+        this.passkeyDisponible.set(respuesta.passkey_disponible === true);
         this.irA('mfa-codigo', respuesta.token_temporal);
+        this.usarPasskey.set(this.ofrecerPasskey());
         return;
       default:
         this.error.set('No se pudo continuar con el inicio de sesión. Intenta de nuevo.');
@@ -211,6 +275,8 @@ export class LoginPageComponent {
     this.aviso.set(null);
     this.form.controls.clave.reset('');
     this.usarRespaldo.set(false);
+    this.usarPasskey.set(false);
+    this.avisoPasskey.set(null);
     this.paso.set(paso);
   }
 
@@ -242,6 +308,9 @@ export class LoginPageComponent {
     this.aviso.set(aviso);
     this.form.controls.clave.reset('');
     this.usarRespaldo.set(false);
+    this.usarPasskey.set(false);
+    this.passkeyDisponible.set(false);
+    this.avisoPasskey.set(null);
     this.codigosRespaldo.set(null);
     this.paso.set('credenciales');
   }

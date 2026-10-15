@@ -19,6 +19,7 @@ import { ErrorAccionSensible, describirErrorSensible } from './errores-mfa';
 import { CambiarClaveFormComponent, CambioClave } from './cambiar-clave-form.component';
 import { CodigosRespaldoComponent } from './codigos-respaldo.component';
 import { MfaEnrolarComponent } from './mfa-enrolar.component';
+import { PasskeysSeccionComponent } from './passkeys-seccion.component';
 import { RegenerarCodigosDialogComponent } from './regenerar-codigos-dialog.component';
 
 /** Total of backup codes the server hands out each time. */
@@ -41,6 +42,7 @@ type AccionSesiones = 'otras' | 'todas';
     IconComponent,
     MfaEnrolarComponent,
     PageHeaderComponent,
+    PasskeysSeccionComponent,
     RegenerarCodigosDialogComponent,
     SesionesListaComponent,
     StatusChipComponent,

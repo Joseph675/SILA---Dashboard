@@ -101,14 +101,36 @@
       }
 
       @case ('mfa-codigo') {
-        @if (usarRespaldo()) {
+        @if (usarPasskey()) {
+          <p class="mb-4 text-sm text-muted-foreground">Confirma que eres tú con la cara o la huella de este dispositivo.</p>
+          @if (avisoPasskey(); as mensaje) {
+            <p class="mb-3 rounded-md bg-primary/10 px-3 py-2 text-sm" role="status" data-testid="aviso-passkey">{{ mensaje }}</p>
+          }
+          @if (error(); as mensaje) {
+            <p class="mb-3 rounded-md bg-destructive/15 px-3 py-2 text-sm" role="alert">{{ mensaje }}</p>
+          }
+          <button type="button" class="sila-btn sila-btn-primary h-12 w-full text-base" data-testid="entrar-passkey" [disabled]="ocupado()" [attr.aria-busy]="ocupado()" (click)="entrarConPasskey()">
+            <app-icon name="lucideScanFace" class="size-5" aria-hidden="true" />
+            {{ ocupado() ? 'Verificando…' : error() || avisoPasskey() ? 'Intentar de nuevo con Face ID / huella' : 'Entrar con Face ID / huella' }}
+          </button>
+          <div class="mt-3 flex flex-col gap-1">
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm w-full" data-testid="usar-codigo-app" [disabled]="ocupado()" (click)="usarCodigoApp()">Usar código de la app</button>
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm w-full" data-testid="usar-codigo-respaldo" [disabled]="ocupado()" (click)="usarCodigoRespaldo()">Usar código de respaldo</button>
+          </div>
+        } @else if (usarRespaldo()) {
           <p class="mb-4 text-sm text-muted-foreground">Escribe uno de los códigos de respaldo que guardaste al activar el segundo factor.</p>
           <app-mfa-respaldo-form [ocupado]="ocupado()" [error]="error()" [enfocar]="true" (codigo)="enviarRespaldo($event)" />
-          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarRespaldo.set(false)">Usar el código de la aplicación</button>
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarCodigoApp()">Usar el código de la aplicación</button>
+          @if (ofrecerPasskey()) {
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-1 w-full" (click)="volverAPasskey()">Entrar con Face ID / huella</button>
+          }
         } @else {
           <p class="mb-4 text-sm text-muted-foreground">Abre tu aplicación de autenticación y escribe el código de 6 dígitos.</p>
           <app-mfa-codigo-form textoBoton="Verificar" [ocupado]="ocupado()" [error]="error()" [enfocar]="true" (codigo)="enviarVerificacion($event)" />
-          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarRespaldo.set(true)">No tengo mi teléfono — usar un código de respaldo</button>
+          <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-3 w-full" (click)="usarCodigoRespaldo()">No tengo mi teléfono — usar un código de respaldo</button>
+          @if (ofrecerPasskey()) {
+            <button type="button" class="sila-btn sila-btn-ghost sila-btn-sm mt-1 w-full" data-testid="volver-passkey" (click)="volverAPasskey()">Entrar con Face ID / huella</button>
+          }
         }
       }
 

@@ -322,7 +322,7 @@ Una **quincena** es el candado contable: mientras está `ABIERTA` se puede escri
 |---|---|
 | `GET /periodos` | `Page<Periodo>`. Filtros: `anio`, `estado` (`ABIERTA`\|`CERRADA`). `sort` permitido (por defecto `fecha_inicio,asc`): `id_periodo`, `anio`, `mes`, `quincena`, `fecha_inicio`, `fecha_fin`, `estado`, `resultado_estimado`. Un año completo son 24 filas: pedir `size=50`. |
 | `GET /periodos/anios` | Arreglo simple de años con quincenas creadas, ascendente: `[2026]`. Alimenta el selector de año. |
-| `GET /periodos/actual` | El `Periodo` que contiene el día de hoy. `404` / `20007` si no hay períodos creados para hoy. |
+| `GET /periodos/actual` | El `Periodo` que contiene el día de hoy **en Colombia** (antes usaba la hora UTC de la base y entre las 7 p. m. y la medianoche devolvía la quincena siguiente). `404` / `20007` si no hay períodos creados para hoy. |
 | `GET /periodos/{id}` | Un `Periodo`. `404` / `20007` si no existe. |
 
 ```json
@@ -588,3 +588,24 @@ Pantalla de inicio. **Un solo endpoint de solo lectura**, igual para OPERATIVO y
 - **`alertas`**: `total` y `criticas` son los mismos de `GET /notificaciones` (la campana); `principales` trae las 5 primeras con el mismo formato.
 - **`ventas_semana`**: siempre 7 filas en orden, de hace 6 días a hoy; los días sin ventas vienen en 0 (sirve directo para una gráfica de barras).
 - Es una foto al momento: refrescar al entrar a la pantalla y, si se quiere, cada 1–2 minutos mientras esté abierta (no más seguido).
+
+## Passkeys: Face ID / huella como segundo factor
+
+Una **passkey** reemplaza los 6 dígitos de la app en el paso de segundo factor del login. **La biometría nunca sale del teléfono**: el teléfono guarda una llave privada en su chip seguro y Face ID / huella solo la desbloquea para firmar un desafío; el servidor guarda la **llave pública** y verifica la firma. El TOTP y los códigos de respaldo **siguen sirviendo** (son el rescate).
+
+- **Requisitos:** la persona debe tener el segundo factor (app de autenticación) **activo**; agregar un dispositivo pide el código de la app o uno de respaldo. Máximo 10 dispositivos por persona. Si un ADMIN **restablece el segundo factor** de alguien, sus passkeys se borran.
+- **Dominio:** la llave queda ligada al dominio desde el que se registró (RP ID = host del origen). Una passkey registrada en `localhost` no sirve en ngrok, ni la de ngrok en el dominio definitivo: al migrar hay que volver a registrarla. El backend acepta los orígenes de `SILA_CORS_ORIGENES`.
+- **Formato de las opciones:** `POST …/opciones` devuelve **tal cual** el JSON del estándar WebAuthn, en **camelCase** (excepción al snake_case del resto del API): `{ "publicKey": { challenge, rp, user, … } }` con binarios en base64url. Pasa `publicKey` a `PublicKeyCredential.parseCreationOptionsFromJSON()` / `parseRequestOptionsFromJSON()` y envía `credencial = cred.toJSON()` (si el navegador no los tiene, convertir base64url ↔ ArrayBuffer a mano).
+
+| Endpoint | Token | Cuerpo | Respuesta |
+|---|---|---|---|
+| `POST /auth/passkey/opciones` | temporal `mfa` | — | `{publicKey}` para `navigator.credentials.get()`. `409` si la persona no tiene passkeys. |
+| `POST /auth/passkey/verificar` | temporal `mfa` | `{credencial}` | Igual que `/mfa/verificar`: `OK` + `access_token` + cookie (o `CAMBIAR_CLAVE`). Firma inválida → `401` (cuenta como intento fallido y puede bloquear la cuenta → `423`). Desafío vencido (3 min) o ya usado → `409`. |
+| `GET /auth/passkeys` | acceso | — | `[{id_passkey, nombre, fecha_creacion, fecha_ultimo_uso}]` (UTC sin zona). |
+| `POST /auth/passkeys/opciones` | acceso | `{codigo}` (6 dígitos o respaldo) | `{publicKey}` para `navigator.credentials.create()`. Sin código → `400`; código malo → `401`; sin segundo factor activo → `409`. |
+| `POST /auth/passkeys` | acceso | `{nombre, credencial}` (nombre 1–60) | `201` `{id_passkey, nombre, fecha_creacion, fecha_ultimo_uso}`. Desafío vencido/usado, dispositivo repetido o tope de 10 → `409`; credencial inválida → `400`. |
+| `DELETE /auth/passkeys/{id}` | acceso | — | `204`; `404` si no existe o no es mía. |
+
+- **En el login:** la respuesta `MFA_REQUERIDO` trae ahora **`passkey_disponible`** (`true`/`false`). Si es `true` y el navegador lo soporta, ofrecer primero «Entrar con Face ID / huella», y dejar el código de 6 dígitos y el de respaldo como alternativas.
+- Un origen que no esté permitido → `403`. Todo queda en la bitácora de accesos: `PASSKEY_REGISTRADA`, `PASSKEY_USADA`, `PASSKEY_FALLIDA`, `PASSKEY_QUITADA`.
+- Las **acciones sensibles** (cambiar clave, editar perfil, regenerar códigos) siguen pidiendo el código de la app o de respaldo; todavía no aceptan passkey.
