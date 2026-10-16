@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpEvent, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, catchError, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
 import { ApiError, ERROR_SIN_CODIGO } from '../api/api-error';
 import { esRutaAuth } from '../auth/rutas-auth';
 import { AuthService } from '../services/auth.service';
@@ -40,6 +40,8 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   const enviar = (peticion: typeof req, esReintento: boolean): Observable<HttpEvent<unknown>> =>
     next(peticion).pipe(
+      // A file request that fails answers its JSON `{code, message}` INSIDE a Blob: read it first so the rest sees a normal error.
+      catchError((fallo: unknown) => (fallo instanceof HttpErrorResponse && fallo.error instanceof Blob ? errorDeBlob(fallo) : throwError(() => fallo))),
       catchError((fallo: unknown) => {
         if (!(fallo instanceof HttpErrorResponse)) {
           return throwError(() => fallo);
@@ -81,8 +83,26 @@ function aApiError(error: HttpErrorResponse): ApiError {
   if (error.status === 0) {
     return { code: ERROR_SIN_CODIGO, message: 'No se pudo conectar con el servidor. Revisa que el backend esté en ejecución.' };
   }
+  if (error.status === 413) {
+    return { code: ERROR_SIN_CODIGO, message: 'El archivo supera el tamaño máximo permitido (10 MB).' };
+  }
   if (error.status >= 500) {
     return { code: 20999, message: 'Error interno del servidor.' };
   }
   return { code: ERROR_SIN_CODIGO, message: 'No se pudo completar la operación.' };
+}
+
+/** Turns the `Blob` body of a failed file request back into the JSON the API sent (or into `null` if it was not JSON). */
+function errorDeBlob(fallo: HttpErrorResponse): Observable<never> {
+  return from((fallo.error as Blob).text().catch(() => '')).pipe(
+    switchMap((texto) => {
+      let cuerpo: unknown = null;
+      try {
+        cuerpo = texto ? JSON.parse(texto) : null;
+      } catch {
+        cuerpo = null;
+      }
+      return throwError(() => new HttpErrorResponse({ error: cuerpo, headers: fallo.headers, status: fallo.status, statusText: fallo.statusText, url: fallo.url ?? undefined }));
+    }),
+  );
 }

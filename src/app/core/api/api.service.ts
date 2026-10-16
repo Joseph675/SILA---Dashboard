@@ -1,7 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { RespuestaArchivo, respuestaDeArchivo } from './archivo-cabeceras';
 import { nuevaClaveIdempotencia } from './idempotencia';
 
 /**
@@ -53,6 +54,33 @@ export class ApiService {
 
   delete<T>(path: string, opciones?: ApiOpciones): Observable<T> {
     return this.http.delete<T>(this.buildUrl(path), this.buildOptions(this.conClave(path, opciones)));
+  }
+
+  // ---------- Binary and multipart (`/archivos/**`: no Idempotency-Key there) ----------
+
+  /**
+   * GET of a file: the bytes plus what the answer headers say (name, id, generated password). A failure arrives as `ApiError`:
+   * the error interceptor reads the JSON `{code, message}` that the server puts inside the `Blob` of a non-2xx answer.
+   */
+  getBlob(path: string, params?: QueryParams): Observable<RespuestaArchivo> {
+    return this.http
+      .get(this.buildUrl(path), { params: this.buildParams(params), responseType: 'blob', observe: 'response' })
+      .pipe(map((r) => respuestaDeArchivo(r.body ?? new Blob(), r.headers)));
+  }
+
+  /** POST with a JSON body that answers a file (e.g. the password-protected download). Same errors as `getBlob`. */
+  postBlob(path: string, body: unknown): Observable<RespuestaArchivo> {
+    return this.http.post(this.buildUrl(path), body, { responseType: 'blob', observe: 'response' }).pipe(map((r) => respuestaDeArchivo(r.body ?? new Blob(), r.headers)));
+  }
+
+  /** `multipart/form-data` answering JSON. `Content-Type` is NOT set: the browser adds it with its `boundary`. */
+  postFormData<T>(path: string, formData: FormData): Observable<T> {
+    return this.http.post<T>(this.buildUrl(path), formData);
+  }
+
+  /** `multipart/form-data` answering a file (`/archivos/descifrar`). */
+  postFormDataBlob(path: string, formData: FormData): Observable<RespuestaArchivo> {
+    return this.http.post(this.buildUrl(path), formData, { responseType: 'blob', observe: 'response' }).pipe(map((r) => respuestaDeArchivo(r.body ?? new Blob(), r.headers)));
   }
 
   /** The explicit key of the caller wins; otherwise a write that requires one gets a fresh `randomUUID()`. */

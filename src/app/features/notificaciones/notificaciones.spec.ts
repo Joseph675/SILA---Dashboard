@@ -59,7 +59,7 @@ describe('lógica de «no vistas»', () => {
     expect(destinoDe({ entidad: 'CLIENTE', id_entidad: 3 }).ruta).toEqual(['/cartera']);
     expect(destinoDe({ entidad: 'PERIODO', id_entidad: 19 }).ruta).toEqual(['/periodos', 19]);
     expect(destinoDe({ entidad: 'PERIODO', id_entidad: null }).ruta).toEqual(['/periodos']);
-    expect(destinoDe({ entidad: 'DOCUMENTO', id_entidad: null }).ruta).toEqual(['/documentos']);
+    expect(destinoDe({ entidad: 'DOCUMENTO', id_entidad: null }).ruta).toEqual(['/archivos']);
   });
 
   it('iconoDe da un icono por tipo, y uno por defecto para un tipo desconocido', () => {

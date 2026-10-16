@@ -120,7 +120,7 @@ describe('Gastos', () => {
 
     const confirmar = () => Array.from(raiz(f).querySelectorAll('dialog')).map((d) => boton(d, 'Anular gasto')).find((b) => b?.className.includes('bg-destructive'))!;
     expect(confirmar().disabled).toBe(true);
-    const motivo = raiz(f).querySelector<HTMLTextAreaElement>('#confirm-motivo')!;
+    const motivo = raiz(f).querySelector<HTMLTextAreaElement>('textarea[id^="confirm-motivo"]')!;
     motivo.value = 'Monto equivocado';
     motivo.dispatchEvent(new Event('input'));
     await estabilizar(f);

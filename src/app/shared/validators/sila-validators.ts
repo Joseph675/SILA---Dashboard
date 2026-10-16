@@ -115,6 +115,10 @@ export const SilaValidators = {
   telefono: ((control: AbstractControl): ValidationErrors | null =>
     vacio(control.value) || TELEFONO.test(String(control.value).trim()) ? null : { telefono: true }) as ValidatorFn,
 
+  /** A name for a folder or file: no `/` or `\\` (they would read as a path). */
+  sinBarras: ((control: AbstractControl): ValidationErrors | null =>
+    /[\\/]/.test(String(control.value ?? '')) ? { sinBarras: true } : null) as ValidatorFn,
+
   /** Reason of a destructive action: `min` to `max` characters once trimmed. */
   motivo(min: number, max = 255): ValidatorFn {
     return (control) => {
@@ -150,6 +154,8 @@ export function mensajeDeError(errors: ValidationErrors | null): string | null {
       return 'Las claves no coinciden.';
     case 'nombreUsuario':
       return '3 a 100 caracteres en minúscula: letras, números, punto, guion, guion bajo o @.';
+    case 'sinBarras':
+      return 'El nombre no puede llevar «/» ni «\\».';
     case 'conEspacios':
       return 'No puede tener espacios.';
     case 'entero':

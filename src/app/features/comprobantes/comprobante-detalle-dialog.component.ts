@@ -1,10 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { ApiErrorService } from '../../core/api/api-error';
 import { EsMovilService } from '../../shared/services/es-movil.service';
 import { DialogComponent } from '../../shared/ui/dialog/dialog.component';
 import { IconComponent } from '../../shared/ui/icon/icon.component';
 import { StatusChipComponent } from '../../shared/ui/status-chip/status-chip.component';
+import { hoyColombia } from '../../shared/utils/fecha-co';
+import { ARCHIVOS_REPOSITORY } from '../archivos/data/archivos.provider';
+import { DescargaDialogComponent } from '../archivos/descarga-dialog.component';
+import type { Archivo } from '../archivos/models/archivos.models';
+import { VisorArchivosService } from '../archivos/visor-archivos.service';
 import { formatoCop, formatoFecha, formatoNumero } from '../../shared/utils/formato-co';
 import { imprimirTicket } from '../../shared/utils/imprimir';
 import { chipEstadoComprobante, etiquetaMetodoComprobante, etiquetaTipoComprobante, montoConSigno, numeroLegible } from './comprobantes.format';
@@ -15,7 +20,7 @@ import type { TipoComprobante } from './models/comprobantes.models';
 @Component({
   selector: 'app-comprobante-detalle-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DialogComponent, IconComponent, StatusChipComponent],
+  imports: [DescargaDialogComponent, DialogComponent, IconComponent, StatusChipComponent],
   template: `
     <app-dialog [open]="documento() !== null" [title]="titulo()" [wide]="true" (closed)="cerrar.emit()">
       @if (detalle.error()) {
@@ -148,24 +153,72 @@ import type { TipoComprobante } from './models/comprobantes.models';
             </div>
           }
 
+          <!-- The PDFs of the voucher (made by the server). Hidden when printing: only the voucher itself is printed. -->
+          <section class="rounded-lg border border-border p-3 print:hidden" aria-labelledby="pdf-comprobante" data-testid="pdf-comprobante">
+            <h3 id="pdf-comprobante" class="mb-2 text-sm font-semibold">PDF del comprobante</h3>
+            @if (pdfs.error()) {
+              <p class="text-sm" role="alert">No se pudo consultar el PDF. <button type="button" class="underline" (click)="pdfs.reload()">Reintentar</button></p>
+            } @else if (!pdfs.hasValue()) {
+              <p class="text-sm text-muted-foreground" aria-busy="true">Buscando el PDF…</p>
+            } @else if (pdfs.value().length === 0) {
+              @if (generando()) {
+                <p class="text-sm" role="status" data-testid="pdf-generando">El PDF se está generando…</p>
+              } @else {
+                <p class="text-sm text-muted-foreground" data-testid="pdf-anterior">Este comprobante es anterior a la función de PDF y no tiene archivo.</p>
+              }
+              <div class="mt-2 flex flex-wrap gap-2">
+                <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" disabled>Ver PDF</button>
+                <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" disabled>Descargar con clave</button>
+              </div>
+            } @else {
+              <ul class="space-y-3">
+                @for (p of pdfs.value(); track p.id_documento) {
+                  <li class="flex flex-wrap items-center justify-between gap-2" data-testid="pdf-fila">
+                    <span class="flex items-center gap-2 text-sm">
+                      {{ p.version === 'ANULADO' ? 'PDF de anulación' : 'PDF original' }}
+                      @if (p.version === 'ANULADO') {
+                        <app-status-chip texto="ANULADO" tono="peligro" />
+                      }
+                    </span>
+                    <span class="flex flex-wrap gap-2">
+                      <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" data-testid="ver-pdf" (click)="verPdf(p)">
+                        <app-icon name="lucideEye" class="size-4" aria-hidden="true" />Ver PDF<span class="sr-only"> {{ p.version === 'ANULADO' ? 'de anulación' : 'original' }}</span>
+                      </button>
+                      <button type="button" class="sila-btn sila-btn-outline sila-btn-sm" data-testid="descargar-pdf" (click)="descargando.set(p)">
+                        <app-icon name="lucideDownload" class="size-4" aria-hidden="true" />Descargar con clave<span class="sr-only"> {{ p.version === 'ANULADO' ? 'de anulación' : 'original' }}</span>
+                      </button>
+                    </span>
+                  </li>
+                }
+              </ul>
+              @if (pdfs.value().length > 1) {
+                <p class="mt-2 text-xs text-muted-foreground" data-testid="original-conservado">El original se conserva sin modificar.</p>
+              }
+            }
+          </section>
+
           <p class="border-t border-border pt-2 text-xs text-muted-foreground" data-testid="aviso-interno">Comprobante interno — no es factura electrónica.</p>
         </div>
       } @else {
         <p class="py-6 text-center text-sm text-muted-foreground" aria-busy="true">Cargando…</p>
       }
       <div dialogFooter class="flex flex-wrap gap-2">
-        <button type="button" class="sila-btn sila-btn-outline" [disabled]="!detalle.hasValue()" (click)="imprimir()">
+        <button type="button" class="sila-btn sila-btn-outline" data-testid="imprimir" [disabled]="!detalle.hasValue()" (click)="imprimir()">
           <app-icon name="lucidePrinter" class="size-4" aria-hidden="true" />
           Imprimir
         </button>
         <button type="button" class="sila-btn sila-btn-primary" (click)="cerrar.emit()">Cerrar</button>
       </div>
     </app-dialog>
+
+    <app-descarga-dialog [archivo]="descargando()" (cerrar)="descargando.set(null)" />
   `,
 })
 export class ComprobanteDetalleDialogComponent {
   private readonly repo = inject(COMPROBANTES_REPOSITORY);
   private readonly errores = inject(ApiErrorService);
+  private readonly archivos = inject(ARCHIVOS_REPOSITORY);
+  private readonly visor = inject(VisorArchivosService);
 
   /** `null` = closed. For an ABONO the `id` is the receipt. */
   readonly documento = input<{ tipo: TipoComprobante; id: number } | null>(null);
@@ -184,6 +237,38 @@ export class ComprobanteDetalleDialogComponent {
     stream: ({ params }) => this.repo.detalle(params.tipo, params.id),
   });
 
+  /** The PDFs of this voucher (`[]`, `[ORIGINAL]` or `[ORIGINAL, ANULADO]`): asked only when the detail is opened, never per row. */
+  protected readonly pdfs = rxResource({
+    params: () => this.documento() ?? undefined,
+    stream: ({ params }) => this.archivos.deComprobante(params.tipo, params.id),
+  });
+  protected readonly descargando = signal<Archivo | null>(null);
+  /** A voucher of TODAY with no PDF yet: the server makes it right away, but it can take a moment (or fail and recover). */
+  protected readonly generando = computed(() => {
+    const d = this.detalle.hasValue() ? this.detalle.value() : null;
+    return d !== null && d.comprobante.fecha.slice(0, 10) >= hoyColombia();
+  });
+  private reintentado = '';
+
+  constructor() {
+    // Just registered and no PDF yet: ask once more after 5 s.
+    effect((limpiar) => {
+      const doc = this.documento();
+      const vacio = this.pdfs.hasValue() && this.pdfs.value().length === 0;
+      const clave = doc ? `${doc.tipo}-${doc.id}` : '';
+      if (!doc || !vacio || !this.generando() || this.reintentado === clave) return;
+      const temporizador = setTimeout(() => {
+        this.reintentado = clave;
+        this.pdfs.reload();
+      }, 5000);
+      limpiar(() => clearTimeout(temporizador));
+    });
+  }
+
+  protected verPdf(p: Archivo): void {
+    void this.visor.ver(p.id_documento, p.nombre_archivo);
+  }
+
   protected readonly titulo = computed(() => {
     const d = this.documento();
     return d ? `${etiquetaTipoComprobante(d.tipo)} N.º ${d.id}` : 'Comprobante';
@@ -195,7 +280,15 @@ export class ComprobanteDetalleDialogComponent {
     return e ? this.errores.describe(e).mensaje : '';
   });
 
+  /**
+   * «Imprimir» opens the OFFICIAL PDF (the one the server made and froze; the cancellation PDF if the voucher was annulled and has one),
+   * from where it is printed. A voucher from before the PDFs has none: it prints the screen like before.
+   */
   protected imprimir(): void {
-    imprimirTicket();
+    const lista = this.pdfs.hasValue() ? this.pdfs.value() : [];
+    const anulado = this.detalle.hasValue() && this.detalle.value().comprobante.estado === 'ANULADO';
+    const oficial = (anulado ? lista.find((p) => p.version === 'ANULADO') : undefined) ?? lista.find((p) => p.version === 'ORIGINAL') ?? lista[0];
+    if (oficial) this.verPdf(oficial);
+    else imprimirTicket();
   }
 }

@@ -36,7 +36,7 @@ export function destinoDe(n: Pick<Notificacion, 'entidad' | 'id_entidad'>): Dest
     case 'PERIODO':
       return { ruta: n.id_entidad !== null ? ['/periodos', n.id_entidad] : ['/periodos'] };
     case 'DOCUMENTO':
-      return { ruta: ['/documentos'] };
+      return { ruta: ['/archivos'] };
     default:
       return { ruta: ['/'] };
   }

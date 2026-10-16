@@ -1,6 +1,6 @@
 # Contrato backend ↔ dashboard
 
-Única fuente de verdad del API de **Autenticación**, **Usuarios**, **Catálogos**, **Períodos**, **Acopio**, **Producción**, **Inventario**, **Ventas**, **Cartera** y **Parámetros**. El backend (`~/sila-backend`) se adaptó a este contrato; si algo cambia, se cambia aquí primero.
+Única fuente de verdad del API de **Autenticación**, **Usuarios**, **Catálogos**, **Períodos**, **Acopio**, **Producción**, **Inventario**, **Ventas**, **Cartera**, **Parámetros** y **Archivos**. El backend (`~/sila-backend`) se adaptó a este contrato; si algo cambia, se cambia aquí primero.
 Verificado contra Oracle el 2026-10-07 (clientes, proveedores y productos) y el 2026-10-08 (períodos, autenticación y usuarios); lectura, escritura, roles y errores.
 
 ## Convenciones
@@ -371,6 +371,9 @@ Fechas ISO (`AAAA-MM-DD`); las cifras son números (COP, hasta 2 decimales).
 | 20008 | 403 | Rol insuficiente o sin sesión |
 | 20009 | 409 | No existe una quincena para la fecha (hay que crear los períodos del año) |
 | 20010 | 409 | Estado inválido: cerrar una quincena ya cerrada, o reabrir una ya abierta |
+| 20018 | 422 | **Archivos:** el contenido de un archivo subido no se admite (tipo, extensión que no corresponde, antivirus, PDF con contenido activo, imagen demasiado grande…). El `message` es apto para mostrarse tal cual |
+| 20018 | 413 | **Archivos:** el archivo supera el tamaño máximo (11 MB en la solicitud; 10 MB de contenido) |
+| 20019 | 503 | **Archivos:** el antivirus o Google Drive no están disponibles / no están conectados, o el archivo guardado no pasa la verificación de integridad. El `message` dice qué |
 | 20999 | 500 | Fallo interno; `support_ref` apunta a `log_errores` |
 
 (También existen 20002, 20003, 20005, 20011 y 20012, que no aplican a Catálogos, Períodos, Autenticación ni Usuarios.)
@@ -604,8 +607,91 @@ Una **passkey** reemplaza los 6 dígitos de la app en el paso de segundo factor 
 | `GET /auth/passkeys` | acceso | — | `[{id_passkey, nombre, fecha_creacion, fecha_ultimo_uso}]` (UTC sin zona). |
 | `POST /auth/passkeys/opciones` | acceso | `{codigo}` (6 dígitos o respaldo) | `{publicKey}` para `navigator.credentials.create()`. Sin código → `400`; código malo → `401`; sin segundo factor activo → `409`. |
 | `POST /auth/passkeys` | acceso | `{nombre, credencial}` (nombre 1–60) | `201` `{id_passkey, nombre, fecha_creacion, fecha_ultimo_uso}`. Desafío vencido/usado, dispositivo repetido o tope de 10 → `409`; credencial inválida → `400`. |
-| `DELETE /auth/passkeys/{id}` | acceso | — | `204`; `404` si no existe o no es mía. |
+| `DELETE /auth/passkeys/{id}` | acceso | `{codigo}` (6 dígitos o respaldo; **cuerpo JSON en el DELETE**) | `204`; `400` sin código; `401` código malo; `404` si no existe o no es mía. Quitar un dispositivo es una acción sensible igual que agregarlo. |
 
 - **En el login:** la respuesta `MFA_REQUERIDO` trae ahora **`passkey_disponible`** (`true`/`false`). Si es `true` y el navegador lo soporta, ofrecer primero «Entrar con Face ID / huella», y dejar el código de 6 dígitos y el de respaldo como alternativas.
 - Un origen que no esté permitido → `403`. Todo queda en la bitácora de accesos: `PASSKEY_REGISTRADA`, `PASSKEY_USADA`, `PASSKEY_FALLIDA`, `PASSKEY_QUITADA`.
 - Las **acciones sensibles** (cambiar clave, editar perfil, regenerar códigos) siguen pidiendo el código de la app o de respaldo; todavía no aceptan passkey.
+
+## Archivos
+
+Gestor de archivos. Hay **dos clases** de archivo, las dos cifradas en el servidor (AES-256-GCM) y con una copia, también cifrada, en Google Drive:
+
+- **PDF de comprobantes** (`origen = COMPROBANTE`): los genera el sistema, **una sola vez**, al registrar una venta, un abono (recibo), un pago a lechero, una compra de insumos o un gasto; **nadie los sube ni los edita**. Quedan congelados (huella SHA-256). Si el movimiento se **anula**, el original NO se toca: se crea un **segundo PDF** (`version = ANULADO`) con la marca de agua «ANULADO», el motivo, quién y cuándo, y apunta al original (`id_documento_original`). Son comprobantes internos, **no facturas**. Los movimientos **anteriores** a esta función no tienen PDF: `GET /archivos/comprobante/{tipo}/{id}` devuelve `[]`.
+- **Archivos del ADMIN** (`origen = ADMIN`, `tipo_entidad = ARCHIVO`): PDF, JPG o PNG hasta **10 MB**, que sube solo el ADMIN a «Mis carpetas». No se borran: se **archivan** con motivo.
+
+**Permisos:** ADMIN y OPERATIVO **ven y descargan todo** (comprobantes y archivos, también los archivados). **Solo ADMIN** sube, archiva, crea/archiva carpetas, ve la bitácora y maneja Drive. Cada ver/descargar/descifrar queda en la bitácora (usuario, IP, navegador, y el **tipo** de clave usado; la clave nunca se guarda).
+
+> **No mandes `Idempotency-Key` en `/archivos/**`** (cuerpos y respuestas binarios; el backend la ignora aquí). Todas las respuestas binarias llevan `Cache-Control: no-store`.
+
+### El objeto `Archivo`
+
+`{ id_documento, origen, tipo_entidad, id_entidad, version, id_documento_original, nombre_archivo, mime_type, tamano_bytes, checksum_sha256, id_carpeta, carpeta, archivado, motivo_archivo, usuario_archivo, fecha_archivo, estado_drive, fecha_drive, usuario_carga, fecha_registro, fecha, numero, sentido, monto, id_tercero, tercero_tipo, tercero, estado_comprobante, id_periodo, anio, mes, quincena }`
+
+- `tipo_entidad`: `VENTA` | `ABONO` (`id_entidad` = id del recibo) | `PAGO_LECHERO` | `COMPRA_INSUMO` | `GASTO` | `ARCHIVO`. `version`: `ORIGINAL` | `ANULADO`.
+- `fecha`: la del comprobante (día de Colombia) o, en archivos subidos, el día en que se subieron. `numero`, `sentido`, `monto`, `tercero*`, `estado_comprobante` (`VIGENTE` | `ANULADO`), `id_periodo`, `anio`, `mes`, `quincena`: solo en comprobantes (null en archivos del ADMIN). `carpeta`/`id_carpeta`: solo en archivos del ADMIN.
+- `estado_drive`: `PENDIENTE` | `SUBIDO` | `ERROR` (copia de respaldo). `mime_type`: `application/pdf` | `image/jpeg` | `image/png`. Nunca viene la ruta interna del archivo.
+
+### Explorador de carpetas
+
+`GET /archivos/explorador?arbol=…&ruta=…&ruta=…&incluir_archivados=false&page&size&sort` → `Explorador = { arbol, ruta: [Entrada], carpetas: [Entrada], archivos: Page<Archivo>, puede_subir }`, con `Entrada = { clave, nombre, cantidad }`.
+
+- **Sin `arbol`**: la raíz. `carpetas` = 4 entradas: `TIPO` («Por tipo»), `CLIENTE` («Por cliente»), `PROVEEDOR` («Por proveedor») y `MANUAL` («Mis carpetas»), cada una con su `cantidad` de archivos.
+- **`ruta`** (parámetro repetido) es el camino de **claves** (`Entrada.clave`) desde el árbol hasta la carpeta; para bajar un nivel se agrega la `clave` elegida. `ruta` devuelve las migas de pan con sus nombres.
+
+| `arbol` | Niveles (cada uno es una `ruta`) | Qué hay en el último nivel |
+|---|---|---|
+| `TIPO` | tipo (`VENTA`, `ABONO`…) → año (`2026`) → quincena (`10-1` = «Octubre - quincena 1») | los PDF de ese tipo y quincena |
+| `CLIENTE` | cliente (`id`) → año | los PDF de ese cliente en el año (ventas y abonos) |
+| `PROVEEDOR` | proveedor (`id`) → año | pagos a lecheros y compras de ese proveedor |
+| `MANUAL` | carpetas anidadas (cada `ruta` es un `id_carpeta`, máx. 5 niveles; sin `ruta` = raíz de «Mis carpetas») | los archivos del ADMIN de esa carpeta |
+
+Los árboles `TIPO`, `CLIENTE` y `PROVEEDOR` son **virtuales y de solo lectura**: un mismo PDF aparece en varios (no se duplica) y no se pueden crear carpetas ahí. Una carpeta virtual sin archivos no existe (`404`). `archivos` viene vacío mientras la carpeta solo contiene otras carpetas. `puede_subir` es `true` solo en `MANUAL` y si quien consulta es ADMIN. `ruta` inválida o más profunda que el árbol → `400`; en `MANUAL`, una `ruta` que no encadena carpetas → `400`. Las compras de insumos sin proveedor y los gastos solo aparecen en `TIPO`.
+
+### Lecturas y descargas
+
+| Endpoint | Detalle |
+|---|---|
+| `GET /archivos` | `Page<Archivo>` plano. Filtros: `origen` (`COMPROBANTE`/`ADMIN`), `tipo` (`tipo_entidad`), `version`, `archivado` (bool), `estado_drive`, `id_carpeta`, `texto` (nombre, número o tercero), `desde`, `hasta` (ISO). `sort`: `fecha` (por defecto desc), `nombre`, `tamano`, `monto`, `tercero`, `numero`, `fecha_registro`, `id`. |
+| `GET /archivos/{id}` | `Archivo`. `404` si no existe. |
+| `GET /archivos/comprobante/{tipo}/{id}` | Los PDF de un comprobante: `[]`, `[ORIGINAL]` o `[ORIGINAL, ANULADO]`. Para ABONO el `id` es el recibo. Úsalo para el botón «Ver PDF» de la pantalla Comprobantes. `400` si el `tipo` es inválido. |
+| `GET /archivos/{id}/contenido` | **Ver**: los bytes tal cual (`Content-Type` real). Queda en bitácora (`VER`). |
+| `GET /archivos/{id}/opciones-descarga` | `{ documento_disponible, motivo_no_disponible, tercero, tercero_tipo, pista_clave_documento, clave_min, clave_max, es_imagen }`. `documento_disponible` es `false` si el archivo no tiene cliente/proveedor (gastos, archivos subidos), si es CONSUMIDOR FINAL o si el tercero no tiene un documento usable; `motivo_no_disponible` dice por qué. `pista_clave_documento` es el documento enmascarado (`900***567`). |
+| `POST /archivos/{id}/descarga` | **Copia protegida con clave** (PDF AES-256). Cuerpo `{ "modo_clave": "DOCUMENTO" \| "ESCRITA" \| "ALEATORIA", "clave": "…" }`. Responde los bytes de un **PDF** (una imagen se envuelve en un PDF de una página). Queda en bitácora (`DESCARGAR` + `modo_clave`). Ver abajo. |
+
+**Modos de clave:** `DOCUMENTO` = el número de documento del cliente/proveedor **solo letras y dígitos, en mayúsculas** (`900.123.456-7` → `9001234567`); `ESCRITA` = la que escribe quien descarga (4 a 64 caracteres, va en `clave`); `ALEATORIA` = el backend genera una de 12 caracteres (`K7MQ-4XPD-9TRB`) y la devuelve **una sola vez** en la cabecera **`X-Clave-Generada`** de la respuesta (mostrarla con botón «Copiar» y avisar que no se puede volver a ver). `DOCUMENTO` sin documento usable → `409` con el motivo; `ESCRITA` fuera de largo → `400` (campo `clave`); otro valor de `modo_clave` → `400`. Texto de ayuda recomendado: «Mande el PDF y la clave por canales distintos (por ejemplo, el PDF por correo y la clave por WhatsApp)».
+
+**Cabeceras de las respuestas binarias:** `Content-Type`, `Content-Disposition: attachment; filename="…"; filename*=UTF-8''…`, `X-Archivo-Id`, `X-Archivo-Nombre` (nombre con %-codificación), `X-Clave-Generada` (solo en ALEATORIA). CORS ya las expone. Lee el cuerpo con `responseType: 'blob'`; la **URL del blob** (`URL.createObjectURL`) se libera con `revokeObjectURL` al cerrar. Los errores de estas rutas siguen siendo JSON `{code, message}`: si pides un blob y el estado no es 2xx, lee el blob como texto y conviértelo a JSON.
+
+### Subir y archivar (solo ADMIN)
+
+| Endpoint | Detalle |
+|---|---|
+| `POST /archivos` | `multipart/form-data`: `archivo` (el archivo) e `id_carpeta` (opcional; sin él, la raíz de «Mis carpetas»). `201` con el `Archivo`. Pasa por: tipo real por los primeros bytes (la extensión debe corresponder), tamaño ≤ 10 MB, **antivirus ClamAV**, revisión (PDF sin JavaScript/acciones/adjuntos ni clave; imágenes re-codificadas y sin metadatos) y cifrado. **422** (`20018`) con el motivo si algo no se admite; **503** (`20019`) si el antivirus no responde (**no se guarda nada sin escanear**); **413** si pasa del límite; `404` si la carpeta no existe; `409` si está archivada. Las subidas rechazadas quedan en la bitácora. El nombre mostrado es el del archivo (sin rutas); el backend nunca lo usa como nombre en disco. |
+| `POST /archivos/{id}/archivar` | `{ "motivo": 5–255 caracteres }` → `Archivo` con `archivado = true`. **No hay borrar ni desarchivar.** Solo archivos del ADMIN; un comprobante del sistema → `409` («nunca se archivan ni se borran»). Un archivo archivado sigue pudiendo verse y descargarse; el explorador lo oculta salvo `incluir_archivados=true`. |
+| `GET /archivos/carpetas` | `List<Carpeta>` hijas de `id_padre` (sin él, las de la raíz). `incluir_archivadas=false`. `Carpeta = { id_carpeta, id_padre, nombre, ruta, nivel, archivada, motivo_archivo, usuario_archivo, fecha_archivo, usuario_creacion, fecha_creacion, n_archivos, n_subcarpetas }`. Cualquier usuario. |
+| `POST /archivos/carpetas` | `{ "id_padre": null \| id, "nombre": 1–80 caracteres sin / ni \\ }` → `201 Carpeta`. Máx. 5 niveles (`409`); nombre repetido en la misma carpeta, sin distinguir mayúsculas → `409`. No se renombran ni se mueven. |
+| `POST /archivos/carpetas/{id}/archivar` | `{ "motivo": … }` → `Carpeta`. Solo si no tiene archivos ni subcarpetas activas (`409`). |
+
+### «Ver documento» (recuperación desde Drive)
+
+`POST /archivos/descifrar` (cualquier usuario) — `multipart/form-data` con `archivo`: un archivo `.sila` bajado de Drive (o del disco del servidor). Responde los **bytes del documento original** (con las mismas cabeceras; `X-Archivo-Id` solo si la base lo conoce). Queda en bitácora (`DESCIFRAR`). Si la base no lo conoce (por ejemplo tras restaurar una base vieja) igual se descifra y se entrega como `recuperado-xxxxxxxx.pdf|jpg|png`. `422` si el archivo no es de SILA, está alterado o no coincide con lo registrado. Solo sirve para archivos cifrados por SILA con la llave del servidor.
+
+### Bitácora (solo ADMIN)
+
+`GET /archivos/accesos` → `Page<{ id_acceso, fecha, id_documento, nombre_archivo, tipo_entidad, id_entidad, version, usuario, accion, modo_clave, ip, user_agent, detalle }>` (más recientes primero). Filtros: `id_documento`, `usuario`, `accion`, `page`, `size`. `accion`: `VER` | `DESCARGAR` | `DESCIFRAR` | `SUBIR` | `ARCHIVAR` | `CARPETA_CREAR` | `CARPETA_ARCHIVAR` | `SUBIDA_RECHAZADA` (esta última sin `id_documento`; el `detalle` dice el nombre y el motivo, p. ej. la amenaza detectada). `modo_clave` (`DOCUMENTO` | `ESCRITA` | `ALEATORIA`) solo en `DESCARGAR`.
+
+### Copia en Google Drive (solo ADMIN)
+
+La copia de respaldo es **cifrada y con nombres opacos** (`<32 hex>.sila`, todo plano en una carpeta `SILA-respaldo`): Google no ve nombres de clientes ni la estructura de carpetas. Un proceso del servidor envía solo lo pendiente cada minuto; el dashboard solo conecta y vigila.
+
+| Endpoint | Detalle |
+|---|---|
+| `GET /archivos/drive/estado` | `{ configurado, conectado, cuenta, carpeta, pendientes, con_error, subidos, ultimo_error, ultima_sincronizacion }`. `configurado = false` si el servidor no tiene las credenciales de Google (mostrar «Drive no está configurado en el servidor»). `ultimo_error` explica el problema (p. ej. «Google rechazó el permiso… vuelva a conectar»). |
+| `GET /archivos/drive/autorizar` | `{ url }`: la dirección de Google a la que hay que **mandar al ADMIN** (`window.location.href = url`) para autorizar con la cuenta de la empresa. `503` si no está configurado. |
+| `GET /archivos/drive/callback` | A donde vuelve Google (el dashboard **no** lo llama). Es público pero exige un `state` firmado de un solo uso (10 min). Termina redirigiendo a la página del dashboard configurada en el servidor (`SILA_DRIVE_RETORNO`) con **`?drive=ok`** o **`?drive=error`**; al volver, vuelve a pedir `/drive/estado`. |
+| `POST /archivos/drive/sincronizar` | Envía ahora lo pendiente (también los que fallaron) y devuelve el estado. `503` si no está conectado. |
+| `POST /archivos/drive/desconectar` | Borra el acceso guardado y devuelve el estado. Lo ya subido queda en Drive; la cola espera una nueva conexión. |
+
+### Qué NO hace el dashboard
+No genera PDF de comprobantes (los hace el servidor); no construye rutas de archivos; no muestra nunca `ruta_interna` (no existe en el API); no guarda archivos ni claves en `localStorage`; no usa `[innerHTML]` con nombres de archivo o carpeta (son texto de usuario). Los PDF subidos **no** se incrustan en un `<iframe>`: se descargan o se abren en una pestaña nueva (ver `docs/PROMPT_ARCHIVOS.md`).

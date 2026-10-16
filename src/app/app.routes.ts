@@ -73,8 +73,8 @@ export const routes: Routes = [
         loadChildren: () => import('./features/gastos/gastos.routes').then((m) => m.GASTOS_ROUTES),
       },
       {
-        path: 'documentos',
-        loadChildren: () => import('./features/documentos/documentos.routes').then((m) => m.DOCUMENTOS_ROUTES),
+        path: 'archivos',
+        loadChildren: () => import('./features/archivos/archivos.routes').then((m) => m.ARCHIVOS_ROUTES),
       },
       {
         path: 'insumos',

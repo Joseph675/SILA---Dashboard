@@ -1,3 +1,4 @@
+import { VisorArchivosComponent } from '../../features/archivos/visor-archivos.component';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { InactividadService } from '../../core/session/inactividad.service';
@@ -13,7 +14,7 @@ import { ThemeCustomizerComponent } from '../theme-customizer/theme-customizer.c
   selector: 'app-dashboard-shell',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent, ThemeCustomizerComponent],
+  imports: [VisorArchivosComponent, RouterOutlet, AvisoInactividadComponent, AvisoRespaldoComponent, ToastHostComponent, SidebarComponent, HeaderComponent, ThemeCustomizerComponent],
   templateUrl: './dashboard-shell.component.html',
 })
 export class DashboardShellComponent {

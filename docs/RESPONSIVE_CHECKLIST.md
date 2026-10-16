@@ -34,6 +34,10 @@ Se midió cada pantalla, ya con sesión de administrador, en los cuatro anchos. 
 | `/auditoria?pestana=errores` | OK | OK | OK | OK |
 | `/cuenta` | OK | OK | OK | OK |
 | `/resultado-quincena` | OK | OK | OK | OK |
+| `/archivos` (raíz, carpeta, «Ver documento») | OK | OK | OK | OK |
+| `/archivos/MANUAL` + subir + nueva carpeta (ADMIN) | OK | OK | OK | OK |
+| `/archivos/drive` y `/archivos/accesos` (ADMIN) | OK | OK | OK | OK |
+| Descargar con clave, detalle y PDF en `/comprobantes?ver=` | OK | OK | OK | OK |
 
 Escritorio (1280 px): sin scroll horizontal en las 24 pantallas.
 `/resultado-quincena` se midió aparte (360, 390, 430 y 768 px, con sesión de OPERATIVO): sin scroll horizontal de la página, zonas táctiles ≥ 44 px y campos ≥ 16 px; la gráfica del año se desliza dentro de su propio contenedor y la tabla del año pasa a tarjetas por debajo de 768 px.
@@ -57,4 +61,5 @@ Se midió con un guion de Playwright que no está en el repo; para repetirlo a m
 - [ ] Tablas pequeñas dentro de diálogos que siguen con scroll horizontal propio: detalle de lechero («Cuánto le debo») y «Ventas pendientes» de Cartera.
 - [ ] Pestañas con el indicador de scroll en 360 px (se desplazan a la pestaña elegida, sin degradado en el borde).
 - [ ] Gráficos (Tablero y «Resultado por quincena»): en teléfono real, que deslizar la gráfica del año con el dedo no choque con el scroll de la página, y que el toque en una columna seleccione la quincena (con emulación táctil solo se probó con el puntero).
+- [ ] «Archivos»: en un teléfono real, que «Ver» abra el PDF en el visor del teléfono (con emulación solo se comprobó que se abre una pestaña `blob:`), que la descarga con clave guarde el PDF y que el teclado no tape el campo de la clave ni el motivo; subir una foto desde la cámara y arrastrar no aplica en el celular.
 - [x] «Resultado por quincena»: gráfica del año (24 quincenas, scroll propio, leyenda a la izquierda) y tabla del año (tarjetas en móvil) revisadas a 360, 390, 430 y 768 px.

@@ -76,3 +76,13 @@ La librería `qrcode` es CommonJS: en el build de producción sus funciones lleg
 ## Endurecer más (opcional, más adelante)
 
 Quitar `'unsafe-inline'` de `style-src` es posible con un **nonce** por respuesta: el proxy lo genera, lo pone en la cabecera (`style-src 'self' 'nonce-…'`) y en `<app-root ngCspNonce="…">` de `index.html`, y Angular lo aplica a las etiquetas `<style>` que crea. Exige que `index.html` se genere dinámicamente por petición (hoy es un archivo estático), así que se dejó fuera de esta entrega.
+
+## Archivos (módulo de archivos y PDF de comprobantes)
+
+El visor de imágenes del módulo Archivos muestra la imagen con una URL `blob:` creada en el navegador (`URL.createObjectURL`) a partir de lo que devuelve el API. Hace falta **una sola** línea nueva en la política del proxy:
+
+```
+img-src 'self' data: blob:
+```
+
+Todo lo demás queda igual. En concreto **no** se agrega `blob:` a `script-src`, `connect-src` ni `frame-src`, y **no** se incrusta ningún PDF en `<iframe>`/`<object>`: los PDF se abren en una pestaña nueva (el visor propio del navegador, aislado de la página) o se descargan. Razón: un PDF subido por el ADMIN pasa por antivirus y se rechaza si trae JavaScript, pero igual no es contenido de la página y no debe vivir dentro de ella. Las descargas (`<a download>` con `blob:`) no las restringe la CSP.

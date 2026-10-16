@@ -128,7 +128,7 @@ describe('Cuentas con los lecheros', () => {
       const confirmar = () => Array.from(raiz(f).querySelectorAll('dialog')).map((d) => boton(d, 'Anular pago')).find((b) => b?.className.includes('bg-destructive'))!;
       expect(confirmar().disabled).toBe(true);
 
-      const motivo = raiz(f).querySelector<HTMLTextAreaElement>('#confirm-motivo')!;
+      const motivo = raiz(f).querySelector<HTMLTextAreaElement>('textarea[id^="confirm-motivo"]')!;
       motivo.value = 'Se pagó dos veces';
       motivo.dispatchEvent(new Event('input'));
       await estabilizar(f);

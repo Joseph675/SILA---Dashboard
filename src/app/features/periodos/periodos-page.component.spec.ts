@@ -110,7 +110,7 @@ describe('PeriodosPageComponent', () => {
       botonesDeFila(fixture, 'Reabrir')[0].click();
       await estabilizar(fixture);
 
-      const motivo = raiz(fixture).querySelector<HTMLTextAreaElement>('#confirm-motivo')!;
+      const motivo = raiz(fixture).querySelector<HTMLTextAreaElement>('textarea[id^="confirm-motivo"]')!;
       const confirmar = botonPorTexto(raiz(fixture), 'Reabrir quincena')!;
       const escribir = async (texto: string) => {
         motivo.value = texto;

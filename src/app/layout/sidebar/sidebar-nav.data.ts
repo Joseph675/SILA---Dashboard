@@ -51,6 +51,7 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     label: 'Finanzas',
     items: [
       { label: 'Gastos', icon: 'lucideBanknote', route: '/gastos' },
+      { label: 'Archivos', icon: 'lucideFolderOpen', route: '/archivos' },
       { label: 'Resultado por quincena', icon: 'lucideChartColumn', route: '/resultado-quincena' },
       { label: 'Períodos', icon: 'lucideCalendarRange', route: '/periodos', rol: 'ADMIN' },
     ],
@@ -64,7 +65,6 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     rol: 'ADMIN',
     items: [
       { label: 'Parámetros', icon: 'lucideSlidersHorizontal', route: '/parametros', rol: 'ADMIN' },
-      { label: 'Documentos Drive', icon: 'lucideCloudUpload', route: '/documentos' },
       { label: 'Resoluciones DIAN', icon: 'lucideStamp' },
       { label: 'Auditoría y accesos', icon: 'lucideShieldCheck', route: '/auditoria' },
       { label: 'Usuarios', icon: 'lucideUserCog', route: '/usuarios', rol: 'ADMIN' },

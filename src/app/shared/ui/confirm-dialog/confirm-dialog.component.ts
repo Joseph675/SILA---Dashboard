@@ -6,6 +6,8 @@ export interface MotivoRegla {
   max: number;
 }
 
+let siguienteConfirm = 0;
+
 /**
  * Confirmation for destructive or state-changing actions. With `motivo`
  * set, the confirm button stays disabled until the reason meets the rule.
@@ -19,16 +21,16 @@ export interface MotivoRegla {
       <p class="text-sm">{{ mensaje() }}</p>
       @if (motivo(); as regla) {
         <div class="mt-4 space-y-1.5">
-          <label for="confirm-motivo" class="text-sm font-medium">Motivo (obligatorio)</label>
+          <label [attr.for]="idMotivo" class="text-sm font-medium">Motivo (obligatorio)</label>
           <textarea
-            id="confirm-motivo"
+            [id]="idMotivo"
             class="sila-textarea"
             [attr.maxlength]="regla.max"
-            aria-describedby="confirm-motivo-ayuda"
+            [attr.aria-describedby]="idMotivo + '-ayuda'"
             [value]="texto()"
             (input)="texto.set($any($event.target).value)"
           ></textarea>
-          <p id="confirm-motivo-ayuda" class="text-xs text-muted-foreground">
+          <p [id]="idMotivo + '-ayuda'" class="text-xs text-muted-foreground">
             Entre {{ regla.min }} y {{ regla.max }} caracteres. Llevas {{ largo() }}.
           </p>
         </div>
@@ -52,6 +54,9 @@ export interface MotivoRegla {
   `,
 })
 export class ConfirmDialogComponent {
+  /** Unique per instance: a page can hold several confirmations (each with its reason box). */
+  protected readonly idMotivo = `confirm-motivo-${siguienteConfirm++}`;
+
   readonly open = input(false);
   readonly titulo = input.required<string>();
   readonly mensaje = input.required<string>();
