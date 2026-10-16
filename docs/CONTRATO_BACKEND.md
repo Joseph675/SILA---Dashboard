@@ -169,7 +169,94 @@ Para que un **reintento** (red lenta, doble clic) no duplique una venta, un abon
 - **Qué hace el servidor:** la primera vez ejecuta y guarda la respuesta (solo si es `2xx`, 24 horas, por usuario). Si llega la misma clave con **el mismo contenido** devuelve **la misma respuesta**, con la cabecera `Idempotency-Replayed: true`, sin ejecutar nada otra vez. Misma clave con **contenido distinto** → `422` / `20017`. Misma clave mientras la primera sigue en proceso → `409` / `20016` (esperar y reintentar). Una respuesta de error (`4xx`/`5xx`) **no se guarda**: tras corregir la solicitud se puede reintentar con la misma clave.
 - No sustituye las restricciones únicas: la misma persona (documento) con **otra** clave sigue dando `409` / `20006`.
 
-## Acopio de leche
+## Materias primas, compras y cuentas con proveedores (2026-10-16) — REEMPLAZA a «Acopio de leche», «Cuentas con los lecheros» e «Insumos…» donde se contradigan
+
+**Idea:** la leche y los insumos (azúcar, cuajo, bolsas…) son una sola cosa: **materias primas**, con stock y **costo promedio ponderado**.
+Todo lo que entra a la planta se registra con **una sola operación de compra**, y el costo de un lote sale del stock (nadie lo digita).
+La ruta sigue siendo `/insumos` (en pantalla se llama «Materias primas»). El proveedor **ya no tiene tipo**: un proveedor puede surtir varias materias primas, y una materia prima puede tener varios proveedores a precios distintos.
+
+### Cambios que rompen lo anterior
+| Antes | Ahora |
+|---|---|
+| `POST /acopio/recepciones`, `GET /acopio/recepciones`, `GET /acopio/pago-lecheros` | **Eliminados.** La entrega de leche es `POST /insumos/compras` con el insumo `LECHE`; el listado es `GET /insumos/compras?id_insumo=<LECHE>`; el resumen por quincena es `GET /cuentas-proveedores/resumen` |
+| `/acopio/precios`, `/acopio/saldos`, `/acopio/pagos`, `/acopio/pagos/{id}/anular` | Pasan a **`/cuentas-proveedores/…`** (mismas reglas, campos nuevos; ver abajo) |
+| `/acopio/umbrales`, `/acopio/calidad` | **Se quedan** (solo lectura, solo de la leche) |
+| Proveedor `tipo_proveedor` (`LECHERO`\|`INSUMOS`) en `GET/POST /catalogos/proveedores` y filtro `tipo_proveedor` | **Desaparece** el campo y el filtro. Quita el selector de tipo en el formulario |
+| `POST /produccion/lotes` con `costo_por_litro` | **Ya no se envía** (se ignora si va: no existe en el contrato). El costo sale del stock |
+| `precio_litro` de los precios del lechero | `precio_unitario`, ahora **por proveedor + materia prima** (`id_insumo`) |
+| Tipos de comprobante/archivo `PAGO_LECHERO`, `COMPRA_INSUMO` | **`PAGO_PROVEEDOR`**, **`COMPRA`** (en `/comprobantes`, `/archivos/comprobante/{tipo}/{id}`, carpetas de Archivos). `RECEPCION_LECHE` ya no existe como tipo de documento |
+| Tablero `lecheros {saldo_por_pagar, proveedores_con_saldo}` y `quincena.leche_por_pagar` | **`proveedores {saldo_por_pagar, proveedores_con_saldo}`** y **`quincena.por_pagar_proveedores`** |
+| Notificación `LECHE_POR_PAGAR` | **`PROVEEDORES_POR_PAGAR`** (clave `PROVEEDORES_POR_PAGAR:<id_periodo>`) |
+| `/periodos` y `/periodos/{id}`: `leche_pagada`, `leche_por_pagar`, `compras_insumos` | Ver «Cuentas de la quincena» abajo |
+
+### Materias primas (`/insumos`)
+`Insumo` ahora trae `requiere_calidad` (boolean). **Solo la LECHE** (`codigo: "LECHE"`, `unidad_medida: "LT"`) lo tiene en `true`: lleva temperatura y acidez y no se puede desactivar (`409`/20006) ni cambiar de unidad (`409`/20006). Existe desde el despliegue; no se crea desde la pantalla. El resto de reglas de insumos no cambia (stock mínimo, ajustes MERMA/DANO/VENCIMIENTO/CORRECCION_*, `GET /insumos/consumos?id_lote=`). Las **mermas de leche** son ajustes de la materia prima LECHE (`POST /insumos/ajustes`, OPERATIVO).
+
+### Compras (`/insumos/compras`) — la única entrada de materias primas
+`POST /insumos/compras` (exige `Idempotency-Key`) → `201 Compra`.
+```jsonc
+// cuerpo
+{ "id_insumo": 12,
+  "id_proveedor": 3,            // opcional. Sin proveedor la compra es de contado
+  "cantidad": 100.5,            // > 0, hasta 3 decimales
+  "valor_total": 180000,        // OPCIONAL: lo que dice la factura. Si falta se usa el precio pactado del proveedor
+                                //   para esa materia prima (la leche, además, el parámetro PRECIO_LECHE_DEFAULT)
+  "referencia": "FACT-123",     // opcional, hasta 60
+  "fecha": "2026-10-16",        // opcional (hoy en Colombia; futura -> 400 fields.fecha)
+  "contado": false,             // opcional. true = pagada al comprar (NO suma a lo que se debe al proveedor).
+                                //   Por defecto: false con proveedor, true sin proveedor
+  "comprado_en": "Plaza de mercado", // opcional, hasta 100: dónde se compró cuando no hay proveedor registrado
+  "temperatura": 8, "acidez": 16     // SOLO la leche, y son obligatorios para ella
+}
+```
+Reglas:
+- **Rol:** la **LECHE** la registra **OPERATIVO** (o ADMIN); **cualquier otra** materia prima, solo **ADMIN** (OPERATIVO → `403`/20008).
+- **LECHE:** exige proveedor, `temperatura` y `acidez`. Si supera los umbrales (`GET /acopio/umbrales`) la entrega **se guarda igual con `estado_calidad: "RECHAZADO"`, `motivo_rechazo`, `valor_total: 0` y NO entra al stock** (respuesta `201`; un rechazo no es un error). Si no, `estado_calidad: "APROBADO"`.
+- Las demás materias primas **no** llevan `temperatura`/`acidez` (si van → `400`).
+- Credito sin proveedor (`contado: false` sin `id_proveedor`) → `400`. Proveedor inexistente → `404`; inactivo → `409`/20006.
+- Sin `valor_total` y sin precio pactado → `400` («indique el valor total»), salvo la leche, que cae en `PRECIO_LECHE_DEFAULT`.
+- Al comprar aprobado: sube el stock y se recalcula el **costo promedio ponderado** de la materia prima.
+- La quincena de la fecha debe estar `ABIERTA` (`409`/20004).
+
+`Compra` (fila): `{id_compra, id_insumo, codigo, insumo, unidad_medida, id_proveedor, proveedor, id_periodo, fecha, cantidad, valor_total, costo_unitario, referencia, estado (VIGENTE|ANULADA), motivo_anulacion, usuario_registro, fecha_registro, contado, comprado_en, estado_calidad (APROBADO|RECHAZADO), temperatura, acidez, motivo_rechazo, requiere_calidad}`. `proveedor` es `null` si no hay; usa `comprado_en` como etiqueta en ese caso.
+
+`GET /insumos/compras`: filtros `id_insumo`, `id_proveedor`, `estado`, `estado_calidad`, `id_periodo`, `contado` (true/false), `desde`, `hasta`; `sort` (por defecto `fecha,desc`): `id_compra, fecha, insumo, proveedor, valor_total, cantidad, estado, temperatura, acidez`.
+
+`POST /insumos/compras/{id}/anular` (ADMIN, `{motivo}` 10–255): revierte stock y costo si es una compra aprobada. `409`/20002 si ya se gastó parte (usa un ajuste); **`409`/20006 si es una compra a crédito de una quincena que ya se pagó de más** (anula primero el pago). Una entrega RECHAZADA se anula sin tocar el stock.
+
+### Cuentas con los proveedores (`/cuentas-proveedores`) — todos los proveedores, por quincena
+Se paga **por quincena** lo comprado **a crédito** (las compras de contado y la leche rechazada no suman). Escrituras: **ADMIN** + `Idempotency-Key`.
+| Método | Ruta | Rol | Qué hace |
+|---|---|---|---|
+| GET | `/cuentas-proveedores/precios` | todos | `Page<PrecioProveedor>`; filtros `id_proveedor`, `id_insumo`, `solo_vigentes`; `PrecioProveedor {id_precio, id_proveedor, proveedor, id_insumo, codigo, insumo, unidad_medida, precio_unitario, vigente_desde, vigente, usuario_creacion, fecha_creacion}` |
+| POST | `/cuentas-proveedores/precios` | ADMIN | `{id_proveedor, id_insumo, precio_unitario (0.0001–100000000), vigente_desde?}` → `201 PrecioProveedor`. Es una **referencia**: la compra puede traer su propio valor; las ya hechas no cambian. Misma fecha = corrige ese día |
+| GET | `/cuentas-proveedores/saldos` | todos | `Page<SaldoProveedor {id_proveedor, proveedor, activo, total_comprado, total_pagado, saldo, ultima_compra, ultimo_pago}>`; filtro `solo_con_saldo`; orden por defecto `saldo,desc` |
+| GET | `/cuentas-proveedores/resumen` | todos | `Page<{id_periodo, anio, mes, quincena, id_proveedor, proveedor, numero_compras, valor_compras, valor_pagado, saldo}>` (reemplaza `pago-lecheros`); filtros `id_periodo`, `anio`, `id_proveedor` |
+| GET | `/cuentas-proveedores/pagos` | todos | igual que antes: `PagoProveedor`; filtros `id_proveedor`, `id_periodo`, `id_periodo_liquidado`, `estado` |
+| POST | `/cuentas-proveedores/pagos` | ADMIN | igual: `{id_proveedor, id_periodo_liquidado, monto, metodo_pago, referencia_pago?, fecha_pago?}` → `201`. `400`/20005 si supera el saldo de esa quincena (solo cuentan las compras a crédito) |
+| POST | `/cuentas-proveedores/pagos/{id}/anular` | ADMIN | `{motivo}` → `PagoProveedor` ANULADO |
+
+### Producción: el lote ya no pregunta el costo
+`POST /produccion/lotes` → `{id_producto, litros_leche_usados, cantidad_obtenida, fecha_produccion?, fecha_vencimiento?}` (sin `costo_por_litro`).
+- Los `litros_leche_usados` son los **reales**. Se descuentan del stock de LECHE y se valoran al **costo promedio vigente**; si no alcanza → `409`/20002 «Falta Leche cruda: se necesitan X LT y hay Y». También se descuentan, como siempre, las demás materias primas de la receta.
+- `Lote` trae además: `costo_por_litro` (promedio al que salió la leche), `litros_esperados` (si la **receta** lleva LECHE: cantidad por unidad × cantidad obtenida; si no, `null`) y `diferencia_litros` (usados − esperados; `null` si no hay esperados). Úsalo para mostrar «esperado vs real» y avisar cuando se aleja.
+- `costo_total = costo_leche + costo_insumos` como antes; `costo_leche` = valor de la leche descontada.
+- **La receta puede llevar LECHE** como una línea más (`{id_insumo: <LECHE>, cantidad: litros por unidad}`): es solo la referencia; el lote usa los litros que digita el operario.
+
+### Cuentas de la quincena (`GET /periodos`, `/periodos/actual`, `/periodos/{id}`)
+Campos de leche/compras (todos en COP salvo litros):
+`leche_litros`, `leche_litros_rechazados`, `leche_comprada` (informativo, está dentro de las compras) ·
+`compras_materias_primas` (todo lo comprado y aprobado) = `compras_contado` + `compras_credito` ·
+`pagado_proveedores` (lo pagado **de esa quincena**, aunque se haya pagado después) · `por_pagar_proveedores` = `compras_credito − pagado_proveedores` ·
+`pagos_proveedores_caja` (lo que salió de caja en la quincena por pagos).
+`caja_neta = total_cobrado − pagos_proveedores_caja − gastos_operativos − compras_contado` (las compras a crédito salen de caja cuando se pagan). `resultado_estimado` no cambia (ventas sin IVA − costo de producción − gastos − cartera castigada). **Se eliminaron** `leche_pagada`, `leche_por_pagar` y `compras_insumos`.
+
+### Comprobantes y archivos
+`COMPRA` (una por compra aprobada, `afecta_caja` = `contado`, tercero = proveedor o, si no hay, `comprado_en`) y `PAGO_PROVEEDOR` reemplazan a `COMPRA_INSUMO` y `PAGO_LECHERO`. La leche rechazada no genera comprobante. Los PDF y las carpetas de Archivos usan los nombres «Compras» y «Pagos a proveedores».
+
+---
+
+## Acopio de leche (ANTERIOR: ver la sección de materias primas, que prevalece)
 
 Cada **recepción** es una entrega de leche de un proveedor LECHERO, con su control de calidad. La base compara la temperatura y la acidez con los **umbrales vigentes** (hoy 10 °C y 18 °Dornic; `GET /acopio/umbrales`): si los superan, la recepción **se guarda igual, pero con `estado_calidad: "RECHAZADO"` y un `motivo_rechazo`** (no se paga). Un rechazo **no es un error**: la respuesta es `201`. Una recepción **no se puede editar ni borrar**. La quincena de la fecha debe estar `ABIERTA` (si no, `409` / `20004`).
 
@@ -395,7 +482,7 @@ curl -s -X PUT localhost:8080/api/v1/catalogos/productos/3 \
 
 Con la sesión ya abierta, **cambiar la clave, regenerar los códigos de respaldo y editar mis datos** vuelven a pedir el código de la app de autenticación (o uno de respaldo; si se usa uno de respaldo se consume). Cada código de 6 dígitos sirve una sola vez: si el usuario acaba de usar el mismo en el login, el backend responde `401 "Ese codigo ya fue usado. Espere el siguiente."` (esperar ≤30 s). Un código incorrecto cuenta como intento fallido y **a los 5 la cuenta se bloquea 15 min (423)**. Límite: 10 intentos de código por minuto (429).
 
-## Cuentas con los lecheros y cuentas de la quincena
+## Cuentas con los lecheros y cuentas de la quincena (ANTERIOR: reemplazada por `/cuentas-proveedores`)
 
 Todos los montos son pesos (COP). Cada recepción de leche **fija** `precio_litro` (el vigente el día de la entrega, o el parámetro
 `PRECIO_LECHE_DEFAULT` si el lechero no tiene precio) y `valor_total = litros × precio` (**0 si fue RECHAZADA**). Cambiar un precio solo
@@ -437,7 +524,7 @@ Dos miradas distintas, que la pantalla debe rotular sin mezclar:
 - **Caja** = `caja_neta`. Es la plata que realmente entró y salió.
 `leche_comprada` NO resta en el resultado (el costo de la leche entra por `costo_produccion`, al producir); se muestra aparte para saber cuánto se debe a los lecheros.
 
-## Insumos, recetas y costo del lote
+## Insumos, recetas y costo del lote (la sección de materias primas prevalece en compras, lotes y proveedores)
 
 Los **insumos** (azúcar, envases…) tienen stock y **costo promedio ponderado**: cada compra lo recalcula. Cada producto puede
 tener una **receta**: cuánto de cada insumo gasta UNA unidad del producto, en la unidad del insumo. Al registrar un lote, el
