@@ -65,7 +65,6 @@ export const SIDEBAR_NAV_GROUPS: SidebarNavGroup[] = [
     rol: 'ADMIN',
     items: [
       { label: 'Parámetros', icon: 'lucideSlidersHorizontal', route: '/parametros', rol: 'ADMIN' },
-      { label: 'Resoluciones DIAN', icon: 'lucideStamp' },
       { label: 'Auditoría y accesos', icon: 'lucideShieldCheck', route: '/auditoria' },
       { label: 'Usuarios', icon: 'lucideUserCog', route: '/usuarios', rol: 'ADMIN' },
     ],

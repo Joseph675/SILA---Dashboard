@@ -55,7 +55,6 @@ const MENSAJES: Record<number, string> = {
   20004: 'La quincena está cerrada. No se pueden registrar movimientos en ella.',
   20005: 'El abono no es válido o supera la deuda del cliente.',
   20008: 'No tienes permiso para realizar esta acción.',
-  20012: 'No hay una resolución de facturación vigente.',
   20016: 'Hay otra solicitud igual en proceso. Espera un momento.',
   20017: 'Esa operación ya se envió con datos distintos. Vuelve a empezar.',
   // 20013 (no autenticado), 20014 (cuenta bloqueada: solo en pasos con la clave ya demostrada, NO en el login) y

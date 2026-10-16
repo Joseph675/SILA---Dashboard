@@ -48,7 +48,7 @@ import { VentaResumenComponent } from './venta-resumen.component';
     <app-confirm-dialog
       [open]="confirmando()"
       titulo="Anular venta"
-      mensaje="La venta quedará anulada: se devuelve el stock y se descuenta la deuda. No se puede deshacer. Si tiene abonos o una factura enviada a la DIAN, no se podrá anular."
+      mensaje="La venta quedará anulada: se devuelve el stock y se descuenta la deuda. No se puede deshacer. Si tiene abonos, no se podrá anular."
       textoConfirmar="Anular venta"
       [peligro]="true"
       [motivo]="regla"
@@ -109,7 +109,7 @@ export class VentaDetalleDialogComponent {
           this.anulando.set(false);
           this.clave.fallo(fallo);
           this.confirmando.set(false);
-          // 20006: the server says why (it has payments, or an invoice sent to the DIAN).
+          // 20006: the server says why (for example, it has payments).
           this.toast.error(mensajeDeFallo(this.errores, fallo, [20006]));
         },
       });

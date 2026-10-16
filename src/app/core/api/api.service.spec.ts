@@ -36,9 +36,9 @@ describe('ApiService · Idempotency-Key', () => {
   });
 
   it('delete también la envía', () => {
-    api.delete('facturacion/9', { idempotencyKey: 'clave-de-prueba-3' }).subscribe();
+    api.delete('gastos/9', { idempotencyKey: 'clave-de-prueba-3' }).subscribe();
 
-    const req = peticion('facturacion/9');
+    const req = peticion('gastos/9');
     expect(req.request.method).toBe('DELETE');
     expect(req.request.headers.get('Idempotency-Key')).toBe('clave-de-prueba-3');
     req.flush({});
